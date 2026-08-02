@@ -1,0 +1,9 @@
+# Snakemake workflow deps for Python 3.10 (`spatial` conda env)
+#   conda activate spatial
+#   pip install -r config/snakemake_requirements.txt
+#
+# Snakemake 8+ requires Python >=3.11. This file pins Snakemake 7.x for py3.10.
+# PuLP must stay <2.8 (Snakemake 7 uses pulp.list_solvers, removed in PuLP 2.8).
+
+snakemake>=7.25,<8
+pulp>=2.3.1,<2.8

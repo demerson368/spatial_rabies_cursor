@@ -1,0 +1,101 @@
+# spatial_rabies_cursor — main Snakemake workflow
+#
+# Usage (from project root on cluster):
+#   snakemake -s workflow/Snakefile --configfile config/config.yaml -n --cores 1
+#   snakemake -s workflow/Snakefile --configfile config/config.yaml --profile profiles/lsf
+#
+# Run one sample end-to-end:
+#   snakemake -s workflow/Snakefile --configfile config/config.yaml \
+#     for_loupe/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_for_loupe.csv
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from functions import (  # noqa: E402
+    cell2location_path,
+    cellestimate_path,
+    h5ad_path,
+    load_samples,
+    loupe_path,
+    processed_dir,
+    ref_path_suffix,
+    ref_tag,
+    rds_path,
+    sr_bin_dir,
+    sr_out_dir,
+    transfer_path,
+)
+
+configfile: "../config/config.yaml"
+
+SAMPLES = load_samples(config)
+LABELS = SAMPLES.index.tolist()
+
+# Output path templates (Snakemake 7: outputs must be strings, not lambdas)
+COHORT = config["cohort"]
+REF_TAG = ref_tag(config)
+REF_SUFFIX = ref_path_suffix(config)
+REF_H5AD = str(Path(config["ref_out"]) / config["ref_file"])
+REF_RDS = str(Path(config["ref_out"]) / config["ref_rds"])
+PROCESSED = f"data/processed/{COHORT}"
+H5AD_OUT = f"{PROCESSED}/spatial_{{label}}.h5ad"
+H5AD_EXT = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_ext.h5ad"
+QC_PLOT = f"{PROCESSED}/spatial_qc_{{label}}.png"
+MORAN_CSV = f"{PROCESSED}/spatial_{{label}}_moranI.csv"
+SVG_PLOT = f"{PROCESSED}/spatial_svgs_{{label}}.png"
+RDS_OUT = f"{PROCESSED}/spatial_{{label}}.rds"
+TRANSFER_OUT = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_predicted.id_transfer.txt"
+CELLESTIMATE_OUT = f"{PROCESSED}/spatial_{{label}}{config['cellestimate_cf']}_cellType.txt"
+C2L_OUT = f"results_cell2location/c2l_spatial_{{label}}_{REF_TAG}/sp.h5ad"
+LOUPE_OUT = f"for_loupe/spatial_{{label}}{REF_SUFFIX}_for_loupe.csv"
+CONDA_PREFIX = config["conda_prefix"]
+PYTHON = f"{CONDA_PREFIX}/bin/python"
+RSCRIPT = f"{CONDA_PREFIX}/bin/Rscript"
+
+
+def seurat_convert_labels():
+    return SAMPLES[SAMPLES.run_seurat_transfer | SAMPLES.run_cellestimate].index.tolist()
+
+
+def transfer_labels():
+    return SAMPLES[SAMPLES.run_seurat_transfer].index.tolist()
+
+
+def cellestimate_labels():
+    return SAMPLES[SAMPLES.run_cellestimate].index.tolist()
+
+
+def cell2location_labels():
+    return SAMPLES[SAMPLES.run_cell2location].index.tolist()
+
+
+def morans_labels():
+    return SAMPLES[SAMPLES.run_morans_i].index.tolist()
+
+
+def assemble_labels():
+    """Labels eligible for assemble_loupe (any enabled annotation method)."""
+    mask = (
+        SAMPLES.run_seurat_transfer
+        | SAMPLES.run_cellestimate
+        | SAMPLES.run_cell2location
+    )
+    return SAMPLES[mask].index.tolist()
+
+
+include: "rules/preprocess.smk"
+include: "rules/morans_i.smk"
+include: "rules/seurat.smk"
+include: "rules/cellestimate.smk"
+include: "rules/cell2location.smk"
+include: "rules/assemble_loupe.smk"
+
+
+rule all:
+    input:
+        expand(
+            "for_loupe/spatial_{label}_for_loupe.csv",
+            label=assemble_labels(),
+        ),

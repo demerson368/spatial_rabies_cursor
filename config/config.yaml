@@ -1,0 +1,54 @@
+# spatial_rabies_cursor — Snakemake configuration
+# Run from project root: snakemake -s workflow/Snakefile --profile profiles/lsf
+
+# Cluster path (update if running from a different mount)
+project_dir: "/research/groups/mackgrp/home/demerson/spatial_rabies_cursor"
+
+cohort: "Tuyu_Apr2026"
+samples_tsv: "config/samples.tsv"
+
+# Conda environment (Python + R/Seurat + cell2location)
+# LSF compute nodes: use env prefix directly (conda.sh is not on shared filesystem).
+conda_prefix: "/home/demerson/.conda/envs/spatial"
+
+# scRNA reference (cell2location + Seurat transfer)
+ref_out: "/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_comprehensive_v1" # older ref: "/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53"
+ref_label: "merged_comprehensive_v1" # older ref: "merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53"
+ref_file: "integrated_comprehensive_v1_mmv2_ref_rawcounts_with_labels.h5ad" # older ref: "integrated_ref_rawcounts_with_labels.h5ad"
+ref_rds: "integrated_comprehensive_v1_mmv2_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" # older ref: "integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_J53_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds"
+# Tag ref-dependent outputs (cell2location, label transfer, loupe CSV). Change this when
+# testing a new reference so results for the same spatial label do not overwrite each other.
+# Example target: for_loupe/spatial_{label}_compv1_mmv2_for_loupe.csv
+ref_tag:  "compv1_mmv2"    #v2 refers to older reference (avoids putting ref_tag in name)  "compv1_mmv2"  refers to newer ref
+
+# Cellestimate (CellTypeEstimate)
+cellestimate_script: "/research/groups/mackgrp/home/demerson/CellTypeEstimate/cte4so.R"
+cellestimate_db: "Yao_et_al_mouse_format_addendum"
+cellestimate_cf: "Yao_et_al_mouse_format"
+
+# Marker atlas for assemble_loupe tlscore / NNLS (Allen atlas Excel).
+# Update alongside ref_tag when switching scRNA reference context.
+#
+# compv1_mmv2 (current):
+marker_excel: "/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/mm.brain.v2.xlsx"
+marker_sheet: "Sheet1"
+marker_cluster_col: "geneSymbolmore1"
+marker_class_col: "Class"
+marker_subclass_col: "subClass"
+#
+# Legacy ref_tag v2 (yao atlas):
+# marker_excel: "/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/yao_et_al_Nature_2023.xlsx"
+# marker_sheet: "supertype_annotation"
+# marker_cluster_col: "supertype.markers.combo"
+# marker_class_col: "class_label"
+# marker_subclass_col: "subclass_label"
+
+# Space Ranger processed data root (per-sample sr_out in samples.tsv)
+plumm_processed_root: "/research/groups/plummgrp/projects/Visium_855118_Steve_Mack_Siri_09232025/common/Tuyu_Apr2026/Processed"
+
+# Optional Moran's I (rule run_morans_i / all_morans; enable per sample in samples.tsv)
+morans_n_perms: 100
+morans_n_jobs: 4
+morans_n_top: 6
+# Restrict to this many HVGs before Moran's I (0 = all genes; slow on Visium HD)
+morans_n_genes: 3000

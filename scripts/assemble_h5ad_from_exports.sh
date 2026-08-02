@@ -1,0 +1,1 @@
+python /research/groups/mackgrp/home/demerson/rabies/assemble_h5ad_from_exports.py J58_GFP_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds

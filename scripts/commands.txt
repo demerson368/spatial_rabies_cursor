@@ -1,0 +1,4 @@
+added to environment spatial:
+conda install -c conda-forge r-base -y
+conda install -c conda-forge r-seurat -y
+Rscript -e "install.packages('GetoptLong', repos='https://cran.r-project.org')"
