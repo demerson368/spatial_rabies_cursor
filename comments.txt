@@ -1,0 +1,9 @@
+Fix just added: LSF job dependencies via Snakemake's {dependencies} placeholder. Downstream jobs now get bsub -w "done(<upstream_jobid>)", so LSF holds them in PEND until upstream jobs complete — much safer for long steps like create_seurat or run_cell2location.
+
+Cluster submission fix — confirmed by logs:
+
+All 5 jobs submitted successfully (job IDs 298517496–298517500)
+snakemake.sh:done exit 0
+Alternative: Remove --immediate-submit and Snakemake will only submit a job once input files exist on disk (slower to queue, but simpler). With LSF -w deps, --immediate-submit is the better pattern.
+
+For your current run (already submitted), check whether downstream jobs are waiting correctly:
