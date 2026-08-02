@@ -1,0 +1,43 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome184>
+Subject: Job 302713145: <smk-run_cellestimate-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> in cluster <hpcf_research_cluster> Done
+
+Job <smk-run_cellestimate-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> was submitted from host <splprhpc08> by user <demerson> in cluster <hpcf_research_cluster> at Sat Jul 18 00:12:56 2026
+Job was executed on host(s) <noderome184>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Sat Jul 18 00:13:03 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Sat Jul 18 00:13:03 2026
+Terminated at Sat Jul 18 00:55:27 2026
+Results reported at Sat Jul 18 00:55:27 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.3k5gqd_r/snakejob.run_cellestimate.2.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   2516.57 sec.
+    Max Memory :                                 23618 MB
+    Average Memory :                             18371.48 MB
+    Total Requested Memory :                     50000.00 MB
+    Delta Memory :                               26382.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                10
+    Run time :                                   2544 sec.
+    Turnaround time :                            2551 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/run_cellestimate.err> for stderr output of this job.
+

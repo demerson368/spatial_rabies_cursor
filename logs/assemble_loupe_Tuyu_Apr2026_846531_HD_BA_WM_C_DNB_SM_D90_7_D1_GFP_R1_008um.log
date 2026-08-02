@@ -1,0 +1,103 @@
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/dask/dataframe/__init__.py:31: FutureWarning: The legacy Dask DataFrame implementation is deprecated and will be removed in a future version. Set the configuration option `dataframe.query-planning` to `True` or None to enable the new Dask Dataframe implementation and silence this warning.
+  warnings.warn(
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/anndata/utils.py:434: FutureWarning: Importing read_text from `anndata` is deprecated. Import anndata.io.read_text instead.
+  warnings.warn(msg, FutureWarning)
+WARNING: genes are not in var_names and ignored: Index(['Gfp', 'GFP', 'eGFP', 'gfp', 'egfp', 'EGFP-L10a', 'Gfp-L10a',
+       'td-Tomato', 'mCherry'],
+      dtype='object')
+/research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/scripts/assemble_loupe_file.py:561: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  scores_df["predicted_celltype"] = scores_df.idxmax(axis=1)
+  Astro-Epen                       18/ 34 detected
+  CB GABA                           5/  9 detected
+  CB Glut                           1/  1 detected
+  CNU-HYa GABA                     19/ 41 detected
+  CNU-HYa Glut                      9/ 24 detected
+  CNU-LGE GABA                     18/ 30 detected
+  CNU-MGE GABA                      3/ 12 detected
+  CTX-CGE GABA                      9/ 18 detected
+  CTX-MGE GABA                     13/ 26 detected
+  DG-IMN Glut                       2/  7 detected
+  HY GABA                          15/ 38 detected
+  HY Glut                          13/ 40 detected
+  HY Gnrh1 Glut                     0/  1 detected
+  HY MM Glut                        0/  1 detected
+  IT-ET Glut                       49/115 detected
+  Immune                            4/ 12 detected
+  LSX GABA                         12/ 29 detected
+  MB Dopa                           1/  4 detected
+  MB GABA                          10/ 30 detected
+  MB Glut                          22/ 56 detected
+  MB-HB Sero                        0/  3 detected
+  MH-LH Glut                        6/ 10 detected
+  MY GABA                           5/ 24 detected
+  MY Glut                          11/ 33 detected
+  NP-CT-L6b Glut                    9/ 25 detected
+  OB-CR Glut                        0/  4 detected
+  OB-IMN GABA                      12/ 30 detected
+  OPC-Oligo                         8/ 11 detected
+  P GABA                           12/ 24 detected
+  P Glut                            9/ 20 detected
+  Pineal Glut                       0/  1 detected
+  TH Glut                          16/ 30 detected
+  Vascular                          4/  9 detected
+
+25 cell types with >= 3 detected markers
+Normalized 'tlscore_Astro-Epen' → 'norm_tlscore_Astro-Epen'
+Threshold applied → 'norm_tlscore_Astro-Epen' | 207061/208874 spots pass (99.1%)
+Normalized 'tlscore_CB GABA' → 'norm_tlscore_CB GABA'
+Threshold applied → 'norm_tlscore_CB GABA' | 190256/208874 spots pass (91.1%)
+Normalized 'tlscore_CNU-HYa GABA' → 'norm_tlscore_CNU-HYa GABA'
+Threshold applied → 'norm_tlscore_CNU-HYa GABA' | 207876/208874 spots pass (99.5%)
+Normalized 'tlscore_CNU-HYa Glut' → 'norm_tlscore_CNU-HYa Glut'
+Threshold applied → 'norm_tlscore_CNU-HYa Glut' | 208451/208874 spots pass (99.8%)
+Normalized 'tlscore_CNU-LGE GABA' → 'norm_tlscore_CNU-LGE GABA'
+Threshold applied → 'norm_tlscore_CNU-LGE GABA' | 208686/208874 spots pass (99.9%)
+Normalized 'tlscore_CNU-MGE GABA' → 'norm_tlscore_CNU-MGE GABA'
+Threshold applied → 'norm_tlscore_CNU-MGE GABA' | 198851/208874 spots pass (95.2%)
+Normalized 'tlscore_CTX-CGE GABA' → 'norm_tlscore_CTX-CGE GABA'
+Threshold applied → 'norm_tlscore_CTX-CGE GABA' | 208140/208874 spots pass (99.6%)
+Normalized 'tlscore_CTX-MGE GABA' → 'norm_tlscore_CTX-MGE GABA'
+Threshold applied → 'norm_tlscore_CTX-MGE GABA' | 208479/208874 spots pass (99.8%)
+Normalized 'tlscore_HY GABA' → 'norm_tlscore_HY GABA'
+Threshold applied → 'norm_tlscore_HY GABA' | 208258/208874 spots pass (99.7%)
+Normalized 'tlscore_HY Glut' → 'norm_tlscore_HY Glut'
+Threshold applied → 'norm_tlscore_HY Glut' | 207463/208874 spots pass (99.3%)
+Normalized 'tlscore_IT-ET Glut' → 'norm_tlscore_IT-ET Glut'
+Threshold applied → 'norm_tlscore_IT-ET Glut' | 208851/208874 spots pass (100.0%)
+Normalized 'tlscore_Immune' → 'norm_tlscore_Immune'
+Threshold applied → 'norm_tlscore_Immune' | 202593/208874 spots pass (97.0%)
+Normalized 'tlscore_LSX GABA' → 'norm_tlscore_LSX GABA'
+Threshold applied → 'norm_tlscore_LSX GABA' | 208219/208874 spots pass (99.7%)
+Normalized 'tlscore_MB GABA' → 'norm_tlscore_MB GABA'
+Threshold applied → 'norm_tlscore_MB GABA' | 206681/208874 spots pass (99.0%)
+Normalized 'tlscore_MB Glut' → 'norm_tlscore_MB Glut'
+Threshold applied → 'norm_tlscore_MB Glut' | 208755/208874 spots pass (99.9%)
+Normalized 'tlscore_MH-LH Glut' → 'norm_tlscore_MH-LH Glut'
+Threshold applied → 'norm_tlscore_MH-LH Glut' | 200409/208874 spots pass (95.9%)
+Normalized 'tlscore_MY GABA' → 'norm_tlscore_MY GABA'
+Threshold applied → 'norm_tlscore_MY GABA' | 202114/208874 spots pass (96.8%)
+Normalized 'tlscore_MY Glut' → 'norm_tlscore_MY Glut'
+Threshold applied → 'norm_tlscore_MY Glut' | 206716/208874 spots pass (99.0%)
+Normalized 'tlscore_NP-CT-L6b Glut' → 'norm_tlscore_NP-CT-L6b Glut'
+Threshold applied → 'norm_tlscore_NP-CT-L6b Glut' | 207550/208874 spots pass (99.4%)
+Normalized 'tlscore_OB-IMN GABA' → 'norm_tlscore_OB-IMN GABA'
+Threshold applied → 'norm_tlscore_OB-IMN GABA' | 205990/208874 spots pass (98.6%)
+Normalized 'tlscore_OPC-Oligo' → 'norm_tlscore_OPC-Oligo'
+Threshold applied → 'norm_tlscore_OPC-Oligo' | 205849/208874 spots pass (98.6%)
+Normalized 'tlscore_P GABA' → 'norm_tlscore_P GABA'
+Threshold applied → 'norm_tlscore_P GABA' | 208421/208874 spots pass (99.8%)
+Normalized 'tlscore_P Glut' → 'norm_tlscore_P Glut'
+Threshold applied → 'norm_tlscore_P Glut' | 202395/208874 spots pass (96.9%)
+Normalized 'tlscore_TH Glut' → 'norm_tlscore_TH Glut'
+Threshold applied → 'norm_tlscore_TH Glut' | 208352/208874 spots pass (99.8%)
+Normalized 'tlscore_Vascular' → 'norm_tlscore_Vascular'
+Threshold applied → 'norm_tlscore_Vascular' | 204111/208874 spots pass (97.7%)
+Normalized 'tlscore_gfp_probe' → 'norm_tlscore_gfp_probe'
+Threshold applied → 'norm_tlscore_gfp_probe' | 569/208874 spots pass (0.3%)
+Normalized 'tltumscore_C11orf95_relafus1' → 'norm_tltumscore_C11orf95_relafus1'
+Threshold applied → 'norm_tltumscore_C11orf95_relafus1' | 208847/208874 spots pass (100.0%)
+Exported 208874 spots

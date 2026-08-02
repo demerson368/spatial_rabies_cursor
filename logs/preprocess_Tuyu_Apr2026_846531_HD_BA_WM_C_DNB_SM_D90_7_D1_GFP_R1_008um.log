@@ -1,0 +1,118 @@
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/dask/dataframe/__init__.py:31: FutureWarning: The legacy Dask DataFrame implementation is deprecated and will be removed in a future version. Set the configuration option `dataframe.query-planning` to `True` or None to enable the new Dask Dataframe implementation and silence this warning.
+  warnings.warn(
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/anndata/utils.py:434: FutureWarning: Importing read_text from `anndata` is deprecated. Import anndata.io.read_text instead.
+  warnings.warn(msg, FutureWarning)
+/research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/scripts/spatial_pipeline.py:28: FutureWarning: Use `squidpy.read.visium` instead.
+  adata_st = sc.read_visium(
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/anndata/_core/anndata.py:1758: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+  utils.warn_names_duplicates("var")
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/anndata/_core/anndata.py:1758: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+  utils.warn_names_duplicates("var")
+[[ 6841.84295581  6807.31465049]
+ [ 3624.56899026  6728.045204  ]
+ [ 7717.94516514  8732.29995478]
+ ...
+ [ 1389.47376714 11400.63759162]
+ [ 1846.50347631 11102.27784043]
+ [10208.39375616  6425.83385449]]
+{'846531_HD_BA_WM_C_DNB_SM_D90-7-D1-GFP_R1': {'images': {'hires': array([[[0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       ...,
+
+       [[0.        , 0.00392157, 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.00392157, 0.00392157, 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.        , 0.00392157, 0.        ],
+        [0.00392157, 0.00392157, 0.        ],
+        [0.00392157, 0.00392157, 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        [0.        , 0.00392157, 0.        ]]],
+      shape=(5783, 6000, 3), dtype=float32), 'lowres': array([[[0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       ...,
+
+       [[0.        , 0.        , 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.        , 0.        , 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]],
+
+       [[0.        , 0.        , 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        [0.        , 0.00392157, 0.        ],
+        ...,
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ],
+        [0.        , 0.        , 0.        ]]],
+      shape=(578, 600, 3), dtype=float32)}, 'scalefactors': {'spot_diameter_fullres': 11.783454985306308, 'bin_size_um': 8.0, 'microns_per_pixel': 0.6789180261625993, 'tissue_lowres_scalef': 0.051233884, 'fiducial_diameter_fullres': 486.06751814388525, 'tissue_hires_scalef': 0.5123388, 'regist_target_img_scalef': 0.5123388}, 'metadata': {'chemistry_description': 'Visium HD v1', 'software_version': 'spaceranger-3.1.2'}}}
+Saved: spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um.h5ad
+Script complete — exiting

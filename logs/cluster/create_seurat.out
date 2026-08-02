@@ -1,0 +1,43 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome157>
+Subject: Job 302696304: <smk-create_seurat-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> in cluster <hpcf_research_cluster> Done
+
+Job <smk-create_seurat-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> was submitted from host <splprhpc08> by user <demerson> in cluster <hpcf_research_cluster> at Fri Jul 17 23:52:49 2026
+Job was executed on host(s) <noderome157>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Fri Jul 17 23:52:52 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Fri Jul 17 23:52:52 2026
+Terminated at Sat Jul 18 00:12:45 2026
+Results reported at Sat Jul 18 00:12:45 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.3k5gqd_r/snakejob.create_seurat.3.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   1140.19 sec.
+    Max Memory :                                 45917 MB
+    Average Memory :                             30276.33 MB
+    Total Requested Memory :                     50000.00 MB
+    Delta Memory :                               4083.00 MB
+    Max Swap :                                   -
+    Max Processes :                              10
+    Max Threads :                                14
+    Run time :                                   1193 sec.
+    Turnaround time :                            1196 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/create_seurat.err> for stderr output of this job.
+

@@ -1,0 +1,24 @@
+Loading required package: SeuratObject
+Loading required package: sp
+
+Attaching package: ‘SeuratObject’
+
+The following objects are masked from ‘package:base’:
+
+    intersect, t
+
+vis_file: /research/groups/mackgrp/home/demerson/spatial_rabies_cursor/data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um.rds
+ref_rds:  /research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53/integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_J53_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds
+out_file: /research/groups/mackgrp/home/demerson/spatial_rabies_cursor/data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_predicted.id_transfer.txt
+Performing PCA on the provided reference using 1797 features as input.
+Projecting cell embeddings
+Finding neighborhoods
+Finding anchors
+	Found 4174 anchors
+Finding integration vectors
+Finding integration vector weights
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+**************************************************|
+Predicting cell labels
+Wrote: /research/groups/mackgrp/home/demerson/spatial_rabies_cursor/data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_predicted.id_transfer.txt

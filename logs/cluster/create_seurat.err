@@ -1,0 +1,20 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Provided resources: mem_mb=50000, mem_mib=47684, disk_mb=8700, disk_mib=8297, gpu=0
+Select jobs to execute...
+
+[Fri Jul 17 23:52:59 2026]
+rule create_seurat:
+    input: data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um.h5ad
+    output: data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um.rds
+    log: logs/create_seurat_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um.log
+    jobid: 0
+    reason: Forced execution
+    wildcards: label=Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um
+    resources: mem_mb=50000, mem_mib=47684, disk_mb=8700, disk_mib=8297, tmpdir=/lsf_tmp/302696304.tmpdir, gpu=0, queue=none
+
+[Sat Jul 18 00:12:44 2026]
+Finished job 0.
+1 of 1 steps (100%) done

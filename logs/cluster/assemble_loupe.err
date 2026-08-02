@@ -1,0 +1,20 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Provided resources: mem_mb=50000, mem_mib=47684, disk_mb=6990, disk_mib=6667, gpu=0
+Select jobs to execute...
+
+[Sat Jul 25 10:48:12 2026]
+rule assemble_loupe:
+    input: data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um.h5ad, data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008umYao_et_al_mouse_format_cellType.txt, data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_compv1_mmv2_predicted.id_transfer.txt, results_cell2location/c2l_spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_compv1_mmv2/sp.h5ad, /research/groups/mackgrp/home/demerson/CellTypeEstimate/db/mm.brain.v2.xlsx
+    output: for_loupe/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_compv1_mmv2_for_loupe.csv, data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_compv1_mmv2_ext.h5ad
+    log: logs/assemble_loupe_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_compv1_mmv2.log
+    jobid: 0
+    reason: Forced execution
+    wildcards: label=Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um
+    resources: mem_mb=50000, mem_mib=47684, disk_mb=6990, disk_mib=6667, tmpdir=/lsf_tmp/305340755.tmpdir, gpu=0, queue=none
+
+[Sat Jul 25 10:53:06 2026]
+Finished job 0.
+1 of 1 steps (100%) done

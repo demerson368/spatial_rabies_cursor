@@ -1,0 +1,20 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 128
+Rules claiming more threads will be scaled down.
+Provided resources: mem_mb=200000, mem_mib=190735, disk_mb=18333, disk_mib=17484, gpu=1
+Select jobs to execute...
+
+[Sat Jul 25 00:03:36 2026]
+rule run_cell2location:
+    input: data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um.h5ad, /research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_comprehensive_v1/integrated_comprehensive_v1_mmv2_ref_rawcounts_with_labels.h5ad
+    output: results_cell2location/c2l_spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_compv1_mmv2/sp.h5ad
+    log: logs/cell2location_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_compv1_mmv2.log
+    jobid: 0
+    reason: Forced execution
+    wildcards: label=Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um
+    resources: mem_mb=200000, mem_mib=190735, disk_mb=18333, disk_mib=17484, tmpdir=/lsf_tmp/305332963.tmpdir, gpu=1, queue=gpu
+
+[Sat Jul 25 05:18:28 2026]
+Finished job 0.
+1 of 1 steps (100%) done

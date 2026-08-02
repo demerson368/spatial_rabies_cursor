@@ -1,0 +1,71 @@
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/dask/dataframe/__init__.py:31: FutureWarning: The legacy Dask DataFrame implementation is deprecated and will be removed in a future version. Set the configuration option `dataframe.query-planning` to `True` or None to enable the new Dask Dataframe implementation and silence this warning.
+  warnings.warn(
+/home/demerson/.conda/envs/spatial/lib/python3.10/site-packages/anndata/utils.py:434: FutureWarning: Importing read_text from `anndata` is deprecated. Import anndata.io.read_text instead.
+  warnings.warn(msg, FutureWarning)
+WARNING: genes are not in var_names and ignored: Index(['Gfp', 'GFP', 'eGFP', 'gfp', 'egfp', 'EGFP-L10a', 'Gfp-L10a',
+       'td-Tomato', 'mCherry'],
+      dtype='object')
+/research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/scripts/assemble_loupe_file.py:606: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  scores_df["predicted_celltype"] = scores_df.idxmax(axis=1)
+Loading marker atlas: file=/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/mm.brain.v2.xlsx sheet=Sheet1 cluster=geneSymbolmore1 class=Class
+  Astrocyte                         1/  2 detected
+  Blood                            10/ 40 detected
+  Brain-blood                       5/  9 detected
+  Cell cycling                      3/  3 detected
+  DCs                               3/  8 detected
+  Ependymal                         0/  3 detected
+  Fibroblast                        6/ 30 detected
+  Glia                             18/ 25 detected
+  Glioblast                        19/ 32 detected
+  Immune                            1/ 51 detected
+  Neruon                            3/  7 detected
+  Neuroblast                        5/  7 detected
+  Neuron                          217/297 detected
+  Neurons                          27/ 31 detected
+  Oligodendrocyte                   5/  7 detected
+  Radial glia                      16/ 40 detected
+  T-Cell                            0/ 14 detected
+  Undefined                        30/ 67 detected
+  Vascular                         31/ 79 detected
+  nIPC                              0/  1 detected
+
+15 cell types with >= 3 detected markers
+Normalized 'tlscore_Blood' → 'norm_tlscore_Blood'
+Threshold applied → 'norm_tlscore_Blood' | 278234/289419 spots pass (96.1%)
+Normalized 'tlscore_Brain-blood' → 'norm_tlscore_Brain-blood'
+Threshold applied → 'norm_tlscore_Brain-blood' | 120013/289419 spots pass (41.5%)
+Normalized 'tlscore_Cell cycling' → 'norm_tlscore_Cell cycling'
+Threshold applied → 'norm_tlscore_Cell cycling' | 69331/289419 spots pass (24.0%)
+Normalized 'tlscore_DCs' → 'norm_tlscore_DCs'
+Threshold applied → 'norm_tlscore_DCs' | 285283/289419 spots pass (98.6%)
+Normalized 'tlscore_Fibroblast' → 'norm_tlscore_Fibroblast'
+Threshold applied → 'norm_tlscore_Fibroblast' | 259862/289419 spots pass (89.8%)
+Normalized 'tlscore_Glia' → 'norm_tlscore_Glia'
+Threshold applied → 'norm_tlscore_Glia' | 286903/289419 spots pass (99.1%)
+Normalized 'tlscore_Glioblast' → 'norm_tlscore_Glioblast'
+Threshold applied → 'norm_tlscore_Glioblast' | 288278/289419 spots pass (99.6%)
+Normalized 'tlscore_Neruon' → 'norm_tlscore_Neruon'
+Threshold applied → 'norm_tlscore_Neruon' | 223536/289419 spots pass (77.2%)
+Normalized 'tlscore_Neuroblast' → 'norm_tlscore_Neuroblast'
+Threshold applied → 'norm_tlscore_Neuroblast' | 277119/289419 spots pass (95.8%)
+Normalized 'tlscore_Neuron' → 'norm_tlscore_Neuron'
+Threshold applied → 'norm_tlscore_Neuron' | 289375/289419 spots pass (100.0%)
+Normalized 'tlscore_Neurons' → 'norm_tlscore_Neurons'
+Threshold applied → 'norm_tlscore_Neurons' | 289140/289419 spots pass (99.9%)
+Normalized 'tlscore_Oligodendrocyte' → 'norm_tlscore_Oligodendrocyte'
+Threshold applied → 'norm_tlscore_Oligodendrocyte' | 265543/289419 spots pass (91.8%)
+Normalized 'tlscore_Radial glia' → 'norm_tlscore_Radial glia'
+Threshold applied → 'norm_tlscore_Radial glia' | 286606/289419 spots pass (99.0%)
+Normalized 'tlscore_Undefined' → 'norm_tlscore_Undefined'
+Threshold applied → 'norm_tlscore_Undefined' | 287822/289419 spots pass (99.4%)
+Normalized 'tlscore_Vascular' → 'norm_tlscore_Vascular'
+Threshold applied → 'norm_tlscore_Vascular' | 288478/289419 spots pass (99.7%)
+Normalized 'tlscore_gfp_probe' → 'norm_tlscore_gfp_probe'
+Threshold applied → 'norm_tlscore_gfp_probe' | 183/289419 spots pass (0.1%)
+Normalized 'tltumscore_C11orf95_relafus1' → 'norm_tltumscore_C11orf95_relafus1'
+Threshold applied → 'norm_tltumscore_C11orf95_relafus1' | 289375/289419 spots pass (100.0%)
+Exported 289419 spots

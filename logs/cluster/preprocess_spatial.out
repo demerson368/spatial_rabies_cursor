@@ -1,0 +1,173 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome144>
+Subject: Job 301345349: <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um> in cluster <hpcf_research_cluster> Done
+
+Job <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um> was submitted from host <splprhpc08> by user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 16:57:57 2026
+Job was executed on host(s) <noderome144>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 16:58:07 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Thu Jul 16 16:58:07 2026
+Terminated at Thu Jul 16 17:02:01 2026
+Results reported at Thu Jul 16 17:02:01 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.7_t3eb78/snakejob.preprocess_spatial.2.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   180.83 sec.
+    Max Memory :                                 6100 MB
+    Average Memory :                             2997.92 MB
+    Total Requested Memory :                     100000.00 MB
+    Delta Memory :                               93900.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                10
+    Run time :                                   234 sec.
+    Turnaround time :                            244 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/preprocess_spatial.err> for stderr output of this job.
+
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome305>
+Subject: Job 301345347: <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> in cluster <hpcf_research_cluster> Done
+
+Job <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> was submitted from host <splprhpc08> by user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 16:57:56 2026
+Job was executed on host(s) <noderome305>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 16:58:01 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Thu Jul 16 16:58:01 2026
+Terminated at Thu Jul 16 17:02:06 2026
+Results reported at Thu Jul 16 17:02:06 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.7_t3eb78/snakejob.preprocess_spatial.14.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   174.01 sec.
+    Max Memory :                                 9256 MB
+    Average Memory :                             3604.56 MB
+    Total Requested Memory :                     100000.00 MB
+    Delta Memory :                               90744.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                10
+    Run time :                                   245 sec.
+    Turnaround time :                            250 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/preprocess_spatial.err> for stderr output of this job.
+
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome326>
+Subject: Job 301345508: <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um> in cluster <hpcf_research_cluster> Done
+
+Job <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um> was submitted from host <splprhpc08> by user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 16:58:02 2026
+Job was executed on host(s) <noderome326>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 16:58:07 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Thu Jul 16 16:58:07 2026
+Terminated at Thu Jul 16 17:02:12 2026
+Results reported at Thu Jul 16 17:02:12 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.7_t3eb78/snakejob.preprocess_spatial.8.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   191.41 sec.
+    Max Memory :                                 7141 MB
+    Average Memory :                             3716.76 MB
+    Total Requested Memory :                     100000.00 MB
+    Delta Memory :                               92859.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                10
+    Run time :                                   245 sec.
+    Turnaround time :                            250 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/preprocess_spatial.err> for stderr output of this job.
+
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome203>
+Subject: Job 301131597: <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> in cluster <hpcf_research_cluster> Exited
+
+Job <smk-preprocess_spatial-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um> was submitted from host <splprhpc12> by user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 12:32:00 2026
+Job was executed on host(s) <noderome203>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Thu Jul 16 12:32:12 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Thu Jul 16 12:32:12 2026
+Terminated at Sun Jul 26 01:54:42 2026
+Results reported at Sun Jul 26 01:54:42 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.6tqny3kz/snakejob.preprocess_spatial.1.sh
+------------------------------------------------------------
+
+TERM_OWNER: job killed by owner.
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   35171.15 sec.
+    Max Memory :                                 39497 MB
+    Average Memory :                             3252.61 MB
+    Total Requested Memory :                     100000.00 MB
+    Delta Memory :                               60503.00 MB
+    Max Swap :                                   -
+    Max Processes :                              13
+    Max Threads :                                31
+    Run time :                                   825748 sec.
+    Turnaround time :                            825762 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/preprocess_spatial.err> for stderr output of this job.
+

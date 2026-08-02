@@ -1,0 +1,110 @@
+Loading required package: SeuratObject
+Loading required package: sp
+
+Attaching package: ‘SeuratObject’
+
+The following objects are masked from ‘package:base’:
+
+    intersect, t
+
+X class: dgRMatrix  dims: 208874 x 15696 
+[1] "counts creation"
+[1] "dgCMatrix"
+[1] "create seu"
+[1] "add meta"
+[1] "match coords"
+[1] "fov creation"
+[1] "assign fov"
+An object of class Seurat 
+15696 features across 208874 samples within 1 assay 
+Active assay: Spatial (15696 features, 0 variable features)
+ 1 layer present: counts
+ 1 spatial field of view present: slice1
+Normalizing layer: counts
+Performing log-normalization
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+**************************************************|
+Finding variable features for layer counts
+Calculating gene variances
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+**************************************************|
+Calculating feature variances of standardized and clipped values
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+**************************************************|
+Centering and scaling data matrix
+  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
+PC_ 1 
+Positive:  Cdkn1c, Igf2, Dlk1, Col1a1, Gfap, Vim, C4b, Sema3f, Slc38a3, Cfb 
+	   Axl, Cebpb, Igfbp7, Serpina3n, Gpnmb, Clu, Padi2, Sparc, Grifin, Col5a1 
+	   Ddr1, C1qa, Gsn, Tapbp, Spp1, Stac2, Col4a1, Icam1, Lrp1, Cnn3 
+Negative:  Snap25, Ncdn, Eef1a2, Ndrg4, Sncb, Snhg11, Atp1a3, Syp, Dnm1, Slc17a7 
+	   Atp1b1, Nrgn, Thy1, Syn1, Camk2a, Snrpn, Eno2, Uchl1, Syt1, Rab6b 
+	   Rtn1, Sez6l2, Rasgrp1, Ptk2b, Ptprn, Cdk5r1, Nefl, Vsnl1, Stxbp1, Lingo1 
+PC_ 2 
+Positive:  Nrgn, Nptxr, Ddn, Ngef, Hpca, Atp1a1, Psd, Camk2n1, Arpp21, Gpm6a 
+	   Akap5, Icam5, Slc8a2, Ctxn1, Camk2a, Cnksr2, Phyhip, Snca, Tmem181a, Agap2 
+	   Pld3, Kcnj4, Hpcal4, Cabp1, Enc1, Cplx2, Cacng8, Mef2c, Stx1a, Slc17a7 
+Negative:  Prkcd, Pcp4, Plp1, Mobp, Mbp, Nefh, Synpo2, Rora, Plekhg1, Rab37 
+	   Tnnt1, Amotl1, Shox2, Adarb1, Ptpn3, Hcn2, Ramp3, Mag, Zic1, Clmn 
+	   Cldn11, Ccdc136, Ntng1, Sparc, Grm1, Ptpn4, Tcf7l2, Nsmf, Rgs16, Patj 
+PC_ 3 
+Positive:  Gpnmb, Cldn11, C4b, Mag, Trf, Apod, Fam107a, Gsn, Cnp, Spp1 
+	   Mbp, Plp1, Mobp, Igfbp5, Serpina3n, Ifit3, Isg15, Car2, Qk, Slc1a2 
+	   Klk6, Cabp1, Mal, Mog, Bcas1, Irf7, C3, Ugt8a, Enpp2, Sept4 
+Negative:  Hap1, Calml4, Baiap3, Calb2, Pax2, Rbp4, Mfap2, Ndn, Cpne7, Zcchc12 
+	   Ahi1, Necab2, Mfrp, Penk, Pmch, Ngfr, Tmem130, Gap43, Ly6h, Zic1 
+	   Pnck, Peg3, Cacna2d2, Uchl1, Gprasp2, Snhg11, Nrsn2, Col5a1, Resp18, Oxt 
+PC_ 4 
+Positive:  Cldn11, Plp1, Mag, Mal, Mobp, Cnp, Penk, Baiap3, Mbp, Ugt8a 
+	   Mog, Car2, Apod, Fa2h, Tspan2, Efnb3, Hap1, Gad2, Sst, Ermn 
+	   Plekhb1, Ppp1r14a, Gjc2, Ndn, Vat1l, Opalin, Qdpr, Klk6, Tmem130, Trf 
+Negative:  Prkcd, Cfb, Col1a1, Cebpb, Sema3f, Rgs4, Cdkn1c, Dlk1, Grifin, Lingo1 
+	   Slc17a7, Axl, Col5a1, Ttyh3, Slc38a3, Col4a1, Akt1, Cck, Icam1, Nptxr 
+	   Igfbp7, Stac2, Capn1, Tapbp, Ncan, Igf2, Bmp7, Lrp1, Olfm1, Ckb 
+PC_ 5 
+Positive:  Hap1, Atp8a1, Ndn, Cabp7, Gria1, Ahi1, Dlk1, Marcks, Wipf3, Ddr1 
+	   Rogdi, Col1a1, Ly6h, Gsn, Lrp1, Ak5, Cacng8, Cdkn1c, Cpne6, Hs3st4 
+	   Sema3f, Col5a1, Cacna2d2, Col4a1, Baiap3, Akt1, Igf2, Gap43, Trf, Ncan 
+Negative:  Snap25, Rgs4, Camk2n1, Mef2c, Lamp5, Ndrg4, Eef1a2, Camk2a, Nrgn, Sncb 
+	   Ncdn, Hlf, Kcnh5, Atp2b2, Atp1b1, Slc1a2, Grm2, Snhg11, Kcnab3, Satb2 
+	   Rora, Cabp1, Epop, AI593442, Slc17a7, Scrt1, Mbp, Cplx1, Ccl5, Cacnb4 
+Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric
+To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'
+This message will be shown once per session
+17:08:01 UMAP embedding parameters a = 0.9922 b = 1.112
+17:08:01 Read 208874 rows and found 30 numeric columns
+17:08:01 Using Annoy for neighbor search, n_neighbors = 30
+17:08:01 Building Annoy index with metric = cosine, n_trees = 50
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+**************************************************|
+17:08:22 Writing NN index file to temp file /lsf_tmp/301348965.tmpdir/Rtmp5Axd3Z/file8244c4a9e6443
+17:08:22 Searching Annoy index using 1 thread, search_k = 3000
+17:10:09 Annoy recall = 100%
+17:10:10 Commencing smooth kNN distance calibration using 1 thread with target n_neighbors = 30
+17:10:15 Initializing from normalized Laplacian + noise (using RSpectra)
+17:10:30 Commencing optimization for 200 epochs, with 10181528 positive edges
+17:10:30 Using rng type: pcg
+Using method 'umap'
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+**************************************************|
+17:12:27 Optimization finished
+Computing nearest neighbor graph
+Computing SNN
+Modularity Optimizer version 1.3.0 by Ludo Waltman and Nees Jan van Eck
+
+Number of nodes: 208874
+Number of edges: 4573151
+
+Running Louvain algorithm...
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+**************************************************|
+Maximum modularity in 10 random starts: 0.8947
+Number of communities: 38
+Elapsed time: 67 seconds
+15 singletons identified. 23 final clusters.

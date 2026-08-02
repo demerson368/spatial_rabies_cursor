@@ -1,0 +1,86 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome138>
+Subject: Job 305340737: <smk-assemble_loupe-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um> in cluster <hpcf_research_cluster> Done
+
+Job <smk-assemble_loupe-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um> was submitted from host <splprhpc11> by user <demerson> in cluster <hpcf_research_cluster> at Sat Jul 25 10:46:07 2026
+Job was executed on host(s) <noderome138>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Sat Jul 25 10:46:10 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Sat Jul 25 10:46:10 2026
+Terminated at Sat Jul 25 10:49:57 2026
+Results reported at Sat Jul 25 10:49:57 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.15jrn99z/snakejob.assemble_loupe.0.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   117.00 sec.
+    Max Memory :                                 2377 MB
+    Average Memory :                             1176.27 MB
+    Total Requested Memory :                     50000.00 MB
+    Delta Memory :                               47623.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                10
+    Run time :                                   227 sec.
+    Turnaround time :                            230 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/assemble_loupe.err> for stderr output of this job.
+
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@noderome138>
+Subject: Job 305340755: <smk-assemble_loupe-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um> in cluster <hpcf_research_cluster> Done
+
+Job <smk-assemble_loupe-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um> was submitted from host <splprhpc11> by user <demerson> in cluster <hpcf_research_cluster> at Sat Jul 25 10:48:02 2026
+Job was executed on host(s) <noderome138>, in queue <standard>, as user <demerson> in cluster <hpcf_research_cluster> at Sat Jul 25 10:48:10 2026
+</home/demerson> was used as the home directory.
+</research/groups/mackgrp/home/demerson/spatial_rabies_cursor> was used as the working directory.
+Started at Sat Jul 25 10:48:10 2026
+Terminated at Sat Jul 25 10:53:06 2026
+Results reported at Sat Jul 25 10:53:06 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/bin/bash /research_jude/rgs01_jude/groups/mackgrp/home/demerson/spatial_rabies_cursor/.snakemake/tmp.c6stix0r/snakejob.assemble_loupe.0.sh
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   283.70 sec.
+    Max Memory :                                 4654 MB
+    Average Memory :                             3529.80 MB
+    Total Requested Memory :                     50000.00 MB
+    Delta Memory :                               45346.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                10
+    Run time :                                   296 sec.
+    Turnaround time :                            304 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/cluster/assemble_loupe.err> for stderr output of this job.
+

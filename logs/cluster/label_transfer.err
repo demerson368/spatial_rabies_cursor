@@ -1,0 +1,20 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Provided resources: mem_mb=100000, mem_mib=95368, disk_mb=29780, disk_mib=28401, gpu=0
+Select jobs to execute...
+
+[Sat Jul 25 00:30:47 2026]
+rule label_transfer:
+    input: data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um.rds, /research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_comprehensive_v1/integrated_comprehensive_v1_mmv2_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds
+    output: data/processed/Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_compv1_mmv2_predicted.id_transfer.txt
+    log: logs/label_transfer_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_compv1_mmv2.log
+    jobid: 0
+    reason: Forced execution
+    wildcards: label=Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um
+    resources: mem_mb=100000, mem_mib=95368, disk_mb=29780, disk_mib=28401, tmpdir=/lsf_tmp/305332958.tmpdir, gpu=0, queue=none
+
+[Sat Jul 25 00:37:19 2026]
+Finished job 0.
+1 of 1 steps (100%) done
