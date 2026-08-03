@@ -1,0 +1,165 @@
+---
+description: Reusable script, workflow, and visualization component patterns for spatial_rabies_cursor
+alwaysApply: true
+---
+
+# Component Patterns
+
+This repo has **no Vue/React UI components**. Reusable units are Python CLI scripts, Snakemake rules, workflow helpers, and plot functions. Map the layered structure like this:
+
+| Layer | Role | Where |
+|-------|------|-------|
+| **Setup** | Docstring, imports, constants, CLI args | Top of `scripts/*.py` |
+| **Template** | Orchestration: load → transform → save | `main()`, Snakemake `rule` blocks |
+| **Style** | Figure output conventions | `plot_*()` helpers, matplotlib/squidpy calls |
+
+---
+
+## Component Structure
+
+### 1. Setup (module header)
+
+Order in newer scripts:
+
+1. Shebang + module docstring
+2. `from __future__ import annotations`
+3. Standard library imports
+4. Third-party imports — set `matplotlib.use("Agg")` **before** `import pyplot` in batch scripts
+5. `DEFAULT_*` / `COHORT` constants
+6. `parse_args()` with `Path` defaults rooted at repo
+
+```python
+# scripts/evaluate_loupe_annotations.py
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+COHORT = "Tuyu_Apr2026"
+DEFAULT_LABEL_COLS = [
+    "tlcelltype_assigned",
+    "nnls_celltype_assigned",
+    "predicted.id",
+]
+
+def parse_args() -> argparse.Namespace:
+    repo_root = Path(__file__).resolve().parents[1]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input_dir", type=Path, default=repo_root / "for_loupe")
+    return parser.parse_args()
+```
+
+Cross-script reuse: add `scripts/` to `sys.path` and import siblings (e.g. `from gfp_neighbor_cell2location import discover_input_files`).
+
+Shared workflow logic lives in `workflow/functions.py` — do not duplicate `load_samples`, `ref_tag`, etc.
+
+### 2. Template (orchestration)
+
+**CLI scripts:** pure helpers → `analyze_*` / `plot_*` → `main()` → `if __name__ == "__main__"`.
+
+**Snakemake rules:** one rule per pipeline step; shell block calls a script with explicit inputs/outputs.
+
+```python
+# scripts/run_morans_i.py — main() loads h5ad, computes stats, writes CSV + PNG
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--h5ad", required=True)
+    parser.add_argument("--label", required=True)
+    args = parser.parse_args()
+
+    adata = sc.read_h5ad(args.h5ad)
+    sq.gr.spatial_autocorr(adata, mode="moran", n_perms=args.n_perms)
+    moran.to_csv(csv_path)
+
+    sq.pl.spatial_scatter(adata, color=top_svgs, size=1.5, ncols=3)
+    plt.savefig(png_path, dpi=300, bbox_inches="tight")
+    plt.close()
+```
+
+```yaml
+# workflow/rules/preprocess.smk
+rule preprocess_spatial:
+    input:
+        sr_bin=lambda wildcards: sr_bin_dir(config, SAMPLES.loc[wildcards.label]),
+    output:
+        h5ad=H5AD_OUT,
+        qc_plot=QC_PLOT,
+    shell:
+        """
+        cd {params.scripts_dir}
+        {params.python} spatial_pipeline.py {input.sr_bin} {params.label}
+        """
+```
+
+**Notebooks:** one stage per cell (imports → `load_sample()` → QC plots → spatial overlays). Prefer calling `scripts/` over copying pipeline logic.
+
+### 3. Style (visualization)
+
+Batch scripts and Snakemake jobs are headless. Every figure must be saved and closed.
+
+```python
+# scripts/evaluate_loupe_annotations.py
+def plot_enrichment_heatmap(zscore: pd.DataFrame, title: str, out_path: Path) -> None:
+    fig, ax = plt.subplots(figsize=(8, 6))
+    im = ax.imshow(zscore.to_numpy(), cmap="coolwarm", vmin=-3, vmax=3)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+```
+
+Conventions:
+- Use `sq.pl.spatial_scatter` / `sc.pl.*` when possible; custom overlays go in `plot_*()` helpers
+- Stable categorical colors via sorted labels + `tab20`/`tab20b`/`tab20c` (see `build_celltype_color_map` in `scripts/gfp_neighbor_cell2location.py`)
+- Filenames: `spatial_{label}_{metric}.png` under `data/processed/{cohort}/` or `results/{cohort}/`
+- R on HPC: skip interactive `SpatialDimPlot` — it is intentionally commented out in `scripts/label_transfer.R`
+
+---
+
+## Naming Patterns
+
+| Kind | Pattern | Example |
+|------|---------|---------|
+| CLI script | `{action}_{target}.py` | `evaluate_loupe_annotations.py`, `run_morans_i.py` |
+| Plot helper | `plot_{what}()` | `plot_celltype_overlay()`, `plot_enrichment_heatmap()` |
+| Analysis helper | `{verb}_{noun}()` | `analyze_sample()`, `build_celltype_color_map()` |
+| Snakemake rule | `{verb}_{noun}` | `preprocess_spatial`, `run_morans_i` |
+| Output figures | `spatial_{label}_{desc}.png` | `spatial_qc_Tuyu_..._016um.png` |
+| Loupe exports | `spatial_{label}_for_loupe.csv` | under `for_loupe/` |
+| Sample label | `{cohort}_{sample_id}_{bin_size}` | `Tuyu_Apr2026_846531_..._016um` |
+
+Metadata columns — preserve existing names and prefixes:
+- `tlcelltype_assigned`, `nnls_celltype_assigned`, `predicted.id`, `cellestimate`
+- Prefixes: `tlscore_`, `nnls_`, `norm_`
+
+---
+
+## What NOT to Do
+
+1. **Do not add Vue/React components** — no frontend stack exists; `.cursor/rules/typescript-style.mdc` is orphaned.
+2. **Do not use `plt.show()` in batch scripts or Snakemake jobs** — always `savefig` + `plt.close()`.
+3. **Do not run Moran's I inside `spatial_pipeline.py`** — use the separate `run_morans_i.py` / `morans_i.smk` rule.
+4. **Do not enable R spatial plotting on headless HPC nodes** — keep `SpatialDimPlot` commented out.
+5. **Do not invent new metadata column names** — read `AGENTS.md` and existing h5ad/CSV schemas first.
+6. **Do not strip `tlscore_` / `nnls_` / `norm_` prefixes** unless explicitly comparing raw strings.
+7. **Do not duplicate pipeline logic in notebooks** — extend `scripts/` and call from Snakemake.
+8. **Do not copy `plot_celltype_overlay` into new dated scripts** — import or centralize in `scripts/`.
+9. **Do not use `sc.read_visium` in new code** — prefer `sq.read.visium` (notebooks already emit FutureWarnings for the old API).
+
+---
+
+## Reference Examples
+
+| Pattern | File |
+|---------|------|
+| Full CLI with typed helpers | `scripts/evaluate_loupe_annotations.py` |
+| Minimal focused script | `scripts/run_morans_i.py` |
+| Stable color map helper | `scripts/gfp_neighbor_cell2location.py` |
+| Custom spatial overlay | `scripts/assemble_loupe_file.py` → `plot_celltype_overlay()` |
+| Workflow shared helpers | `workflow/functions.py` |
+| Snakemake wrapper | `workflow/rules/preprocess.smk` |
+| Notebook load helper | `notebooks/QC_v2.ipynb` → `load_sample()` |
+| R CLI with GetoptLong | `scripts/label_transfer.R` |
