@@ -29,7 +29,7 @@ Order in newer scripts:
 6. `parse_args()` with `Path` defaults rooted at repo
 
 ```python
-# scripts/evaluate_loupe_annotations.py
+# scripts/gfp_neighbor_cell2location.py
 from __future__ import annotations
 
 import argparse
@@ -40,18 +40,52 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 COHORT = "Tuyu_Apr2026"
-DEFAULT_LABEL_COLS = [
-    "tlcelltype_assigned",
-    "nnls_celltype_assigned",
-    "predicted.id",
-]
+DEFAULT_RADII_UM = (8, 16, 24, 48, 80, 120)
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the GFP neighbor analysis script.
+
+    Returns:
+        argparse.Namespace: Parsed arguments including input/output paths,
+            sample filters, radii, and plot options.
+    """
     repo_root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input_dir", type=Path, default=repo_root / "for_loupe")
     return parser.parse_args()
 ```
+
+#### Documentation (all `scripts/*.py`)
+
+Every script must follow the Google-style docstring convention in `scripts/gfp_neighbor_cell2location.py`:
+
+1. **Module docstring** — prose paragraph(s) describing purpose, inputs, and outputs (no bullet lists).
+2. **Every function** — including `parse_args`, `main`, `plot_*`, and analysis helpers — gets:
+   - One-line summary
+   - `Args:` — each parameter documented
+   - `Returns:` — typed description (including `None` for side-effect-only functions)
+   - `Raises:` — when applicable
+3. **`main()`** — entry-point docstring describing orchestration flow.
+4. **Cross-references** — use `:func:` for internal links where helpful.
+
+```python
+# scripts/gfp_neighbor_cell2location.py
+def infer_bin_um(path: Path, override: float | None) -> float:
+    """Infer Visium HD bin size in microns from a filename.
+
+    Args:
+        path: Input file path containing a token like ``_008um_``.
+        override: If provided, this value is returned instead of parsing.
+
+    Returns:
+        float: Bin size in microns (e.g. 8 for ``008um``).
+
+    Raises:
+        ValueError: If bin size cannot be inferred and no override is given.
+    """
+```
+
+Applies to **all** `scripts/*.py` CLI scripts. Minimal one-off scripts (e.g. `run_morans_i.py`) should be brought up to this convention when next modified.
 
 Cross-script reuse: add `scripts/` to `sys.path` and import siblings (e.g. `from gfp_neighbor_cell2location import discover_input_files`).
 
@@ -104,6 +138,16 @@ Batch scripts and Snakemake jobs are headless. Every figure must be saved and cl
 ```python
 # scripts/evaluate_loupe_annotations.py
 def plot_enrichment_heatmap(zscore: pd.DataFrame, title: str, out_path: Path) -> None:
+    """Save a heatmap of neighborhood enrichment z-scores.
+
+    Args:
+        zscore: Symmetric enrichment z-score matrix.
+        title: Figure title.
+        out_path: Output PNG path.
+
+    Returns:
+        None
+    """
     fig, ax = plt.subplots(figsize=(8, 6))
     im = ax.imshow(zscore.to_numpy(), cmap="coolwarm", vmin=-3, vmax=3)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -148,6 +192,7 @@ Metadata columns — preserve existing names and prefixes:
 7. **Do not duplicate pipeline logic in notebooks** — extend `scripts/` and call from Snakemake.
 8. **Do not copy `plot_celltype_overlay` into new dated scripts** — import or centralize in `scripts/`.
 9. **Do not use `sc.read_visium` in new code** — prefer `sq.read.visium` (notebooks already emit FutureWarnings for the old API).
+10. **Do not add or leave public script functions without Google-style docstrings** — follow `scripts/gfp_neighbor_cell2location.py` for all new and modified `scripts/*.py`.
 
 ---
 
@@ -155,9 +200,10 @@ Metadata columns — preserve existing names and prefixes:
 
 | Pattern | File |
 |---------|------|
-| Full CLI with typed helpers | `scripts/evaluate_loupe_annotations.py` |
+| Full CLI with typed helpers + docstrings | `scripts/gfp_neighbor_cell2location.py` |
+| Spatial evaluation CLI (same docstring convention) | `scripts/evaluate_loupe_annotations.py` |
 | Minimal focused script | `scripts/run_morans_i.py` |
-| Stable color map helper | `scripts/gfp_neighbor_cell2location.py` |
+| Stable color map helper | `scripts/gfp_neighbor_cell2location.py` → `build_celltype_color_map()` |
 | Custom spatial overlay | `scripts/assemble_loupe_file.py` → `plot_celltype_overlay()` |
 | Workflow shared helpers | `workflow/functions.py` |
 | Snakemake wrapper | `workflow/rules/preprocess.smk` |

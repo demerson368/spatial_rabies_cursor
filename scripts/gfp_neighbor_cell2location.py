@@ -664,6 +664,45 @@ def plot_from_pooled_results(
         )
 
 
+def resolve_loupe_csv(input_dir: Path, sample: str) -> Path:
+    """Resolve a sample label to a single Loupe export CSV path.
+
+    Prefers the canonical ``spatial_{sample}_for_loupe.csv`` file. Ref-tagged
+    variants (e.g. ``_compv1_mmv2``) are only returned when the sample name
+    explicitly includes that suffix.
+
+    Args:
+        input_dir: Directory containing ``spatial_*_for_loupe.csv`` files.
+        sample: Sample label (stem between ``spatial_`` and ``_for_loupe.csv``).
+
+    Returns:
+        Path: Resolved Loupe CSV path.
+
+    Raises:
+        FileNotFoundError: If no matching file exists, or only ref-tagged
+            variants exist for a base sample name.
+    """
+    sample = sample.strip()
+    canonical = input_dir / f"spatial_{sample}_for_loupe.csv"
+    if canonical.is_file():
+        return canonical
+
+    exact = [p for p in input_dir.glob("spatial_*_for_loupe.csv") if infer_label(p) == sample]
+    if len(exact) == 1:
+        return exact[0]
+
+    variants = sorted(
+        p for p in input_dir.glob("spatial_*_for_loupe.csv")
+        if infer_label(p).startswith(f"{sample}_")
+    )
+    if variants:
+        raise FileNotFoundError(
+            f"No base Loupe CSV for {sample!r}. Expected {canonical.name}. "
+            f"Ref-tagged variants exist but were not selected: {[p.name for p in variants]}"
+        )
+    raise FileNotFoundError(f"No Loupe CSV found for sample {sample!r} in {input_dir}")
+
+
 def discover_input_files(input_dir: Path, samples: list[str] | None) -> list[Path]:
     """Find Loupe export CSVs in an input directory.
 
@@ -678,15 +717,12 @@ def discover_input_files(input_dir: Path, samples: list[str] | None) -> list[Pat
     Raises:
         FileNotFoundError: If ``samples`` is set but a requested label has no file.
     """
-    all_files = sorted(input_dir.glob("spatial_*_for_loupe.csv"))
     if samples:
-        wanted = {s.strip() for s in samples}
-        files = [p for p in all_files if infer_label(p) in wanted]
-        missing = wanted - {infer_label(p) for p in files}
-        if missing:
-            raise FileNotFoundError(f"No Loupe CSV found for sample labels: {sorted(missing)}")
+        files = [resolve_loupe_csv(input_dir, s) for s in samples]
+        for path in files:
+            print(f"Using Loupe input: {path}")
         return files
-    return all_files
+    return sorted(input_dir.glob("spatial_*_for_loupe.csv"))
 
 
 def analyze_sample(

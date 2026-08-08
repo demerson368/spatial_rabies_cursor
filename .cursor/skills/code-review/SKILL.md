@@ -24,3 +24,28 @@ Review code changes systematically for quality, security, and maintainability.
 7. Suggest improvements with explanations
 8. Highlight what is done well
 9. Format feedback as Critical / Suggestion / Nice-to-have
+
+
+## Checklist
+
+### Code quality
+
+- [ ] Clear, descriptive names
+- [ ] Single-responsibility functions
+- [ ] No duplicated logic
+
+### Project standards
+
+- [ ] Composition API with script setup
+- [ ] pep8 style
+
+### Security
+
+- [ ] No hardcoded credentials
+- [ ] Sanitized inputs
+- [ ] No sensitive data in logs
+
+### Tests
+
+- [ ] Unit tests for new logic
+- [ ] Existing tests passing

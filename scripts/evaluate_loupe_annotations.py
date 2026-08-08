@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 """Evaluate Loupe annotation exports for spatial coherence and cross-method agreement.
 
-Reads ``for_loupe/spatial_*_for_loupe.csv``, parses Visium HD grid coordinates from
-barcodes, and computes per-sample:
-
-  - Moran's I and Geary's C on one-hot label indicators (spatial clustering)
-  - Neighborhood enrichment z-scores (squidpy)
-  - Mean neighbor label consistency (fraction of spatial neighbors sharing label)
-
+Reads Loupe export CSVs from for_loupe/, parses grid coordinates from Visium HD
+barcodes (e.g. s_008um_00788_00395-1), and computes per-sample spatial statistics
+for each annotation column: Moran's I and Geary's C on one-hot label indicators,
+neighborhood enrichment z-scores (squidpy), and mean neighbor label consistency.
 Optionally reports pairwise agreement (fraction, Cohen's kappa, ARI, NMI) between
 annotation columns.
 """
@@ -50,6 +47,13 @@ PREFIXES_TO_STRIP = ("tlscore_", "nnls_")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the Loupe annotation evaluation script.
+
+    Returns:
+        argparse.Namespace: Parsed arguments including input/output paths,
+            sample filters, label columns, spatial graph settings, and flags
+            for agreement metrics, autocorrelation, enrichment, and plotting.
+    """
     repo_root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -156,11 +160,29 @@ def parse_args() -> argparse.Namespace:
 
 
 def write_csv(df: pd.DataFrame, path: Path) -> None:
+    """Write a DataFrame to CSV, creating parent directories as needed.
+
+    Args:
+        df: Table to write.
+        path: Destination CSV path. Parent directories are created if missing.
+
+    Returns:
+        None
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
 
 
 def barcode_pattern(bin_um: int) -> re.Pattern[str]:
+    """Build a regex that extracts grid coordinates from Visium HD barcodes.
+
+    Args:
+        bin_um: Bin size in microns used in the barcode tag (e.g. 8 -> ``008um``).
+
+    Returns:
+        re.Pattern[str]: Compiled pattern with two capture groups for x and y
+            grid indices (e.g. ``s_008um_00788_00395-1``).
+    """
     width = 3 if bin_um < 100 else len(str(int(bin_um)))
     tag = f"{bin_um:0{width}d}um"
     return re.compile(rf"s_{tag}_(\d+)_(\d+)-")
@@ -174,7 +196,27 @@ def load_loupe_annotations(
     subsample: int = 0,
     seed: int = 0,
 ) -> tuple[pd.DataFrame, np.ndarray, np.ndarray]:
-    """Load Loupe CSV, parse grid coords, and retain requested label columns."""
+    """Load a Loupe export CSV and parse spatial coordinates from barcodes.
+
+    Args:
+        path: Path to a ``spatial_*_for_loupe.csv`` file.
+        bin_um: Bin size in microns for barcode parsing.
+        label_cols: Annotation column names to retain (missing columns are skipped
+            with a warning).
+        barcode_col: Column name for spot barcodes.
+        subsample: If >0, randomly subsample this many spots after loading.
+        seed: Random seed used when ``subsample`` > 0.
+
+    Returns:
+        tuple containing:
+            - pd.DataFrame: Spot metadata (barcode plus present label columns).
+            - np.ndarray: x grid coordinates (int32), one per spot.
+            - np.ndarray: y grid coordinates (int32), one per spot.
+
+    Raises:
+        ValueError: If the barcode column is missing or none of the requested
+            label columns are present.
+    """
     df = pd.read_csv(path)
     if barcode_col not in df.columns:
         raise ValueError(f"{path}: missing column {barcode_col!r}")
@@ -216,7 +258,20 @@ def filter_label_categories(
     min_spots: int,
     max_labels: int,
 ) -> tuple[pd.Series, list[str]]:
-    """Keep frequent categories; rare types become ``Other_rare``."""
+    """Keep frequent label categories and collapse rare types.
+
+    Args:
+        labels: Per-spot annotation labels.
+        min_spots: Minimum spot count required to keep a category.
+        max_labels: Maximum number of categories to retain (by spot count).
+            If 0, no cap is applied beyond ``min_spots``.
+
+    Returns:
+        tuple containing:
+            - pd.Series: Filtered labels with rare categories replaced by
+              ``Other_rare``.
+            - list[str]: Sorted list of retained category names.
+    """
     counts = labels.value_counts()
     keep = counts[counts >= min_spots].index.tolist()
     if max_labels > 0 and len(keep) > max_labels:
@@ -233,6 +288,19 @@ def build_spatial_adata(
     label_col: str,
     n_neighs: int,
 ) -> ad.AnnData:
+    """Build an AnnData object with a grid spatial graph for one label column.
+
+    Args:
+        obs: Spot metadata containing ``label_col``.
+        xs: x grid coordinates for all spots.
+        ys: y grid coordinates for all spots.
+        label_col: Annotation column to store in ``adata.obs``.
+        n_neighs: Number of grid neighbors for :func:`squidpy.gr.spatial_neighbors`.
+
+    Returns:
+        ad.AnnData: Minimal AnnData with ``obsm['spatial']`` and a precomputed
+            spatial connectivity graph in ``obsp['spatial_connectivities']``.
+    """
     adata = ad.AnnData(
         X=np.zeros((obs.shape[0], 1), dtype=np.float32),
         obs=obs[[label_col]].copy(),
@@ -244,7 +312,16 @@ def build_spatial_adata(
 
 
 def neighbor_coherence(adata: ad.AnnData, label_col: str) -> float:
-    """Mean fraction of spatial neighbors sharing the same label."""
+    """Compute mean fraction of spatial neighbors sharing the same label.
+
+    Args:
+        adata: AnnData with a precomputed spatial connectivity graph.
+        label_col: Annotation column in ``adata.obs`` to compare across neighbors.
+
+    Returns:
+        float: Mean neighbor label consistency across spots, or ``nan`` if no
+            spots have neighbors.
+    """
     conn = adata.obsp["spatial_connectivities"]
     labels = adata.obs[label_col].astype(str).to_numpy()
     scores: list[float] = []
@@ -264,7 +341,26 @@ def label_onehot_autocorr(
     n_perms: int,
     n_jobs: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Moran's I and Geary's C on one-hot indicators for each label category."""
+    """Compute Moran's I and Geary's C on one-hot indicators for each label category.
+
+    Args:
+        adata: AnnData with a precomputed spatial connectivity graph.
+        label_col: Annotation column in ``adata.obs`` to one-hot encode.
+        min_spots: Minimum spot count per category (passed to
+            :func:`filter_label_categories`).
+        max_labels: Maximum categories to retain (passed to
+            :func:`filter_label_categories`).
+        n_perms: Number of permutations for squidpy spatial autocorrelation.
+        n_jobs: Parallel jobs for squidpy.
+
+    Returns:
+        tuple containing:
+            - pd.DataFrame: Moran's I results with ``label_category`` index column.
+            - pd.DataFrame: Geary's C results with ``label_category`` index column.
+
+    Raises:
+        ValueError: If no label categories pass the frequency filters.
+    """
     filtered, _ = filter_label_categories(
         adata.obs[label_col].astype(str),
         min_spots=min_spots,
@@ -304,6 +400,22 @@ def nhood_enrichment_matrix(
     n_perms: int,
     n_jobs: int,
 ) -> pd.DataFrame:
+    """Compute neighborhood enrichment z-scores between label categories.
+
+    Args:
+        adata: AnnData with a precomputed spatial connectivity graph.
+        label_col: Annotation column in ``adata.obs`` to cluster by.
+        min_spots: Minimum spot count per category (passed to
+            :func:`filter_label_categories`).
+        max_labels: Maximum categories to retain (passed to
+            :func:`filter_label_categories`).
+        n_perms: Number of permutations for squidpy neighborhood enrichment.
+        n_jobs: Parallel jobs for squidpy.
+
+    Returns:
+        pd.DataFrame: Symmetric z-score matrix indexed and columned by label
+            category.
+    """
     filtered, _ = filter_label_categories(
         adata.obs[label_col].astype(str),
         min_spots=min_spots,
@@ -334,6 +446,15 @@ def nhood_enrichment_matrix(
 
 
 def strip_prefix(label: str) -> str:
+    """Remove known annotation prefixes for cross-method comparison.
+
+    Args:
+        label: Raw annotation label string.
+
+    Returns:
+        str: Label with ``tlscore_`` or ``nnls_`` prefix removed, or the
+            original string if no prefix matches.
+    """
     for prefix in PREFIXES_TO_STRIP:
         if label.startswith(prefix):
             return label[len(prefix) :]
@@ -345,6 +466,19 @@ def pairwise_agreement(
     cols: list[str],
     normalize: bool,
 ) -> pd.DataFrame:
+    """Compute pairwise agreement metrics between annotation columns.
+
+    Args:
+        df: Spot metadata containing all columns in ``cols``.
+        cols: Annotation column names to compare in all pairwise combinations.
+        normalize: If True, strip ``tlscore_`` / ``nnls_`` prefixes via
+            :func:`strip_prefix` before comparing labels.
+
+    Returns:
+        pd.DataFrame: One row per column pair with agreement fraction,
+            Cohen's kappa, adjusted Rand index, and normalized mutual
+            information.
+    """
     rows: list[dict] = []
     for col_a, col_b in combinations(cols, 2):
         a = df[col_a].astype(str)
@@ -367,6 +501,18 @@ def pairwise_agreement(
 
 
 def plot_enrichment_heatmap(zscore: pd.DataFrame, title: str, out_path: Path, max_types: int = 25) -> None:
+    """Save a heatmap of neighborhood enrichment z-scores.
+
+    Args:
+        zscore: Symmetric enrichment z-score matrix (rows/columns = label types).
+        title: Figure title.
+        out_path: Output PNG path.
+        max_types: Maximum number of label types to include (truncates large
+            matrices for readability).
+
+    Returns:
+        None
+    """
     if zscore.empty:
         return
     if len(zscore) > max_types:
@@ -388,6 +534,17 @@ def plot_enrichment_heatmap(zscore: pd.DataFrame, title: str, out_path: Path, ma
 
 
 def plot_coherence_bar(coherence_df: pd.DataFrame, label: str, out_path: Path) -> None:
+    """Save a bar chart of neighbor label coherence by annotation column.
+
+    Args:
+        coherence_df: Table with ``annotation_col`` and ``neighbor_coherence``
+            columns (one row per annotation method).
+        label: Sample label for the figure title.
+        out_path: Output PNG path.
+
+    Returns:
+        None
+    """
     fig, ax = plt.subplots(figsize=(8, 4))
     order = coherence_df.sort_values("neighbor_coherence", ascending=False)
     ax.bar(order["annotation_col"], order["neighbor_coherence"], color="steelblue")
@@ -419,6 +576,34 @@ def analyze_sample(
     skip_enrichment: bool,
     plot: bool,
 ) -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    """Run spatial evaluation for one Loupe export and write result tables.
+
+    Args:
+        path: Path to a ``spatial_*_for_loupe.csv`` file.
+        output_dir: Directory for per-sample CSV outputs and optional figures.
+        label_cols: Annotation columns to evaluate.
+        bin_um_override: Bin size in microns; if None, inferred from filename.
+        n_neighs: Grid neighbors for the spatial graph.
+        n_perms: Permutations for autocorrelation and enrichment tests.
+        n_jobs: Parallel jobs for squidpy.
+        min_label_spots: Minimum spots per label category before filtering.
+        max_labels: Maximum label categories to retain.
+        subsample: If >0, randomly subsample spots before analysis.
+        seed: Random seed for subsampling.
+        agreement: If True and >=2 label columns present, compute pairwise
+            agreement metrics.
+        normalize_for_agreement: Strip prefixes before agreement comparison.
+        skip_autocorr: Skip Moran's I and Geary's C computation.
+        skip_enrichment: Skip neighborhood enrichment computation.
+        plot: Write enrichment heatmaps and coherence bar chart.
+
+    Returns:
+        tuple containing:
+            - pd.DataFrame: Neighbor coherence summary (one row per annotation
+              column).
+            - pd.DataFrame | None: Pairwise agreement table, or ``None`` if
+              ``agreement`` is False or fewer than two columns are present.
+    """
     label = infer_label(path)
     bin_um = infer_bin_um(path, bin_um_override)
     print(f"\nSample: {label} ({path.name}, bin={bin_um:g} µm)")
@@ -518,6 +703,15 @@ def analyze_sample(
 
 
 def main() -> None:
+    """Entry point: evaluate Loupe annotations across samples and write summaries.
+
+    Parses CLI arguments, discovers input files, runs :func:`analyze_sample`
+    for each, writes combined coherence and agreement CSVs, and optionally
+    generates enrichment heatmaps and coherence bar charts.
+
+    Returns:
+        None
+    """
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -526,6 +720,8 @@ def main() -> None:
         raise FileNotFoundError(f"No spatial_*_for_loupe.csv files found in {args.input_dir}")
 
     print(f"Found {len(input_files)} Loupe CSV(s) in {args.input_dir}")
+    for path in input_files:
+        print(f"  -> {path.resolve()}")
 
     all_coherence: list[pd.DataFrame] = []
     all_agreement: list[pd.DataFrame] = []
