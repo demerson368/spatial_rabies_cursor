@@ -1,0 +1,49 @@
+# LSF profile for Snakemake 7.x (Python 3.10 compatible)
+# Usage:
+#   snakemake -s workflow/Snakefile --configfile config/config.yaml --profile profiles/lsf
+
+cores: 10
+jobs: 50
+latency-wait: 120
+keep-going: false
+rerun-incomplete: true
+restart-times: 1
+# immediate-submit disabled: wait for each job via cluster-status (clearer progress)
+immediate-submit: false
+# notemp disabled: cluster child jobs share .snakemake/tmp.* with the driver;
+# --notemp caused FileNotFoundError on driver shutdown after successful runs.
+
+cluster-config: profiles/lsf/cluster.yaml
+
+# Snakemake passes upstream LSF job IDs via {dependencies}; jobscript is last arg.
+cluster: profiles/lsf/cluster-submit.sh {dependencies}
+
+# Snakemake appends the external job id as argv[1] — do not add {jobid}.
+cluster-status: profiles/lsf/status_lsf.sh
+
+default-resources:
+  mem_mb: 64000
+  gpu: 0
+  queue: none
+
+set-resources:
+  run_cell2location:
+    mem_mb: 200000
+    queue: gpu
+    gpu: 1
+  preprocess_spatial:
+    mem_mb: 100000
+  run_morans_i:
+    mem_mb: 100000
+  assemble_loupe:
+    mem_mb: 50000
+  create_seurat:
+    mem_mb: 50000
+  label_transfer:
+    mem_mb: 100000
+  run_cellestimate:
+    mem_mb: 50000
+
+set-threads:
+  preprocess_spatial: 4
+  run_morans_i: 4

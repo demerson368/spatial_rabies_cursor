@@ -1,0 +1,28 @@
+# Per-rule LSF resources for Snakemake 7 --cluster-config
+__default__:
+  mem_mb: 64000
+  queue: none
+  gpu: 0
+
+run_cell2location:
+  mem_mb: 150000
+  queue: gpu
+  gpu: 1
+
+preprocess_spatial:
+  mem_mb: 100000
+
+run_morans_i:
+  mem_mb: 100000
+
+assemble_loupe:
+  mem_mb: 50000
+
+create_seurat:
+  mem_mb: 50000
+
+label_transfer:
+  mem_mb: 100000
+
+run_cellestimate:
+  mem_mb: 50000
