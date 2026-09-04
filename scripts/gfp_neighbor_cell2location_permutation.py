@@ -1,10 +1,13 @@
 #!/usr/bin/env python
-"""Permutation test for cell2location enrichment in GFP+ neighborhoods.
+"""Permutation test for cell-type enrichment in GFP+ neighborhoods.
 
 Builds on gfp_neighbor_cell2location.py. For each cell type and radius, compares
 the observed pooled neighbor fraction around true GFP+ seeds to a null
 distribution obtained by repeatedly sampling the same number of random seed
 locations from a candidate spot pool (spatial permutation / label swap).
+
+The annotation source is configurable (default: ``cellestimate``) via
+``--annotation_col``.
 
 One-sided p-values:
   - p_enrichment: fraction of permutations with null fraction >= observed
@@ -86,9 +89,14 @@ def parse_args() -> argparse.Namespace:
         help="Value in gfp_col that marks GFP+ seed spots",
     )
     parser.add_argument(
+        "--annotation_col",
+        default=gnc.DEFAULT_ANNOTATION_COL,
+        help="Loupe column for cell-type annotation (default: cellestimate)",
+    )
+    parser.add_argument(
         "--c2l_col",
-        default=gnc.DEFAULT_C2L_COL,
-        help="cell2location assignment column",
+        default=None,
+        help="Deprecated alias for --annotation_col",
     )
     parser.add_argument(
         "--n_perm",
@@ -148,21 +156,21 @@ def benjamini_hochberg(p_values: np.ndarray) -> np.ndarray:
 def precompute_neighbor_counts(
     xs: np.ndarray,
     ys: np.ndarray,
-    c2l: np.ndarray,
+    labels: np.ndarray,
     grid: dict,
     radius_um: float,
     bin_um: float,
 ) -> tuple[np.ndarray, list[str]]:
-    """Precompute neighbor cell2location counts for every spot at one radius.
+    """Precompute neighbor cell-type counts for every spot at one radius.
 
     For each spot, finds all neighbors within ``radius_um`` and counts how
-    many belong to each cell2location label. Used to accelerate permutation
+    many belong to each cell-type label. Used to accelerate permutation
     testing by avoiding repeated spatial lookups.
 
     Args:
         xs: x grid coordinates for all spots.
         ys: y grid coordinates for all spots.
-        c2l: cell2location label for each spot.
+        labels: Cell-type label for each spot.
         grid: Spatial index from :func:`gnc.build_spatial_index`.
         radius_um: Neighborhood radius in microns.
         bin_um: Bin size in microns.
@@ -173,7 +181,7 @@ def precompute_neighbor_counts(
               with neighbor counts per spot and cell type.
             - list[str]: Cell type names corresponding to matrix columns.
     """
-    cell_types = sorted(set(c2l.tolist()))
+    cell_types = sorted(set(labels.tolist()))
     ct_to_i = {ct: i for i, ct in enumerate(cell_types)}
     n_spots = len(xs)
     n_types = len(cell_types)
@@ -186,7 +194,7 @@ def precompute_neighbor_counts(
             print(f"    precompute: {spot_idx:,}/{n_spots:,} spots ({elapsed:.1f}s)")
         nbr_idxs = gnc.neighbor_indices(xs, ys, grid, spot_idx, radius_um, bin_um)
         for j in nbr_idxs:
-            counts[spot_idx, ct_to_i[c2l[j]]] += 1
+            counts[spot_idx, ct_to_i[labels[j]]] += 1
     print(f"    precompute done: {n_spots:,} spots in {time.time() - t0:.1f}s")
     return counts, cell_types
 
@@ -217,7 +225,7 @@ def permutation_test_enrichment(
     rng: np.random.Generator,
     min_observed_count: int,
 ) -> pd.DataFrame:
-    """Run spatial permutation test for cell2location neighborhood enrichment.
+    """Run spatial permutation test for neighborhood cell-type enrichment.
 
     Compares the observed pooled neighbor fraction for each cell type around
     true GFP+ seeds to a null distribution built by randomly sampling the same
@@ -254,7 +262,6 @@ def permutation_test_enrichment(
         )
 
     obs_counts = precomputed_counts[seed_indices].sum(axis=0)
-    obs_total = obs_counts.sum()
     obs_frac = pooled_fractions_from_counts(obs_counts.astype(float))
 
     null_fracs = np.zeros((n_perm, len(cell_types)), dtype=float)
@@ -266,7 +273,6 @@ def permutation_test_enrichment(
     rows: list[dict] = []
     p_enrich_list: list[float] = []
     p_deplete_list: list[float] = []
-    tested_indices: list[int] = []
 
     for j, ct in enumerate(cell_types):
         observed_count = int(obs_counts[j])
@@ -281,7 +287,7 @@ def permutation_test_enrichment(
 
         rows.append(
             {
-                "cell2location": ct,
+                gnc.CELLTYPE_COL: ct,
                 "observed_neighbor_count": observed_count,
                 "observed_neighbor_fraction": obs_frac[j],
                 "global_fraction": g_frac,
@@ -296,7 +302,6 @@ def permutation_test_enrichment(
         )
         p_enrich_list.append(p_enrich)
         p_deplete_list.append(p_deplete)
-        tested_indices.append(j)
 
     if not rows:
         return pd.DataFrame()
@@ -320,7 +325,7 @@ def analyze_sample_permutation(
     bin_um_override: float | None,
     gfp_col: str,
     gfp_value: str,
-    c2l_col: str,
+    annotation_col: str,
     n_perm: int,
     seed: int,
     candidate_pool: str,
@@ -339,7 +344,7 @@ def analyze_sample_permutation(
         bin_um_override: Optional bin size override; inferred if ``None``.
         gfp_col: Column marking GFP probe status.
         gfp_value: Value in ``gfp_col`` that defines GFP+ seeds.
-        c2l_col: cell2location assignment column.
+        annotation_col: Loupe column for cell-type annotation.
         n_perm: Number of permutations per radius.
         seed: Random seed for reproducible pseudo-seed sampling.
         candidate_pool: ``"all"`` uses any spot as null; ``"non_gfp"`` excludes
@@ -352,10 +357,10 @@ def analyze_sample_permutation(
     """
     label = gnc.infer_label(path)
     bin_um = gnc.infer_bin_um(path, bin_um_override)
-    print(f"\nSample: {label} ({path.name}, bin={bin_um:g} µm)")
+    print(f"\nSample: {label} ({path.name}, bin={bin_um:g} µm, annotation={annotation_col})")
 
-    df, xs, ys, c2l, is_seed = gnc.load_loupe_csv(
-        path, bin_um, gfp_col, gfp_value, c2l_col, gnc.DEFAULT_BARCODE_COL
+    df, xs, ys, labels, is_seed = gnc.load_loupe_csv(
+        path, bin_um, gfp_col, gfp_value, annotation_col, gnc.DEFAULT_BARCODE_COL
     )
     grid = gnc.build_spatial_index(xs, ys)
     seed_indices = np.flatnonzero(is_seed)
@@ -374,8 +379,8 @@ def analyze_sample_permutation(
     else:
         candidate_indices = np.arange(n_spots, dtype=int)
 
-    global_df = gnc.global_distribution(c2l)
-    global_df = global_df.set_index("cell2location")
+    global_df = gnc.global_distribution(labels)
+    global_df = global_df.set_index(gnc.CELLTYPE_COL)
 
     rng = np.random.default_rng(seed)
     all_results: list[pd.DataFrame] = []
@@ -383,7 +388,7 @@ def analyze_sample_permutation(
     for radius_um in radii_um:
         print(f"  radius={radius_um:g} µm: precomputing neighbor counts ...")
         precomputed, cell_types = precompute_neighbor_counts(
-            xs, ys, c2l, grid, radius_um, bin_um
+            xs, ys, labels, grid, radius_um, bin_um
         )
         global_fractions = np.array(
             [global_df.loc[ct, "fraction"] if ct in global_df.index else 0.0 for ct in cell_types]
@@ -410,22 +415,21 @@ def analyze_sample_permutation(
         n_sig = int(result["significant_enrichment_005"].sum())
         top = result.sort_values("p_enrichment").head(3)
         top_str = ", ".join(
-            f"{r.cell2location} (FC={r.fold_change_vs_global:.2f}, p={r.p_enrichment:.3f})"
+            f"{getattr(r, gnc.CELLTYPE_COL)} (FC={r.fold_change_vs_global:.2f}, p={r.p_enrichment:.3f})"
             for r in top.itertuples()
         )
         print(f"  radius={radius_um:g} µm: {n_sig} enriched at FDR<=0.05; top: {top_str}")
 
         result.insert(0, "radius_um", radius_um)
         result.insert(0, "sample", label)
-        result.insert(2, "n_spots", n_spots)
-        result.insert(3, "n_gfp_seeds", len(seed_indices))
-        result.insert(4, "n_perm", n_perm)
-        result.insert(5, "candidate_pool", candidate_pool)
+        result.insert(2, "annotation_col", annotation_col)
+        result.insert(3, "n_spots", n_spots)
+        result.insert(4, "n_gfp_seeds", len(seed_indices))
+        result.insert(5, "n_perm", n_perm)
+        result.insert(6, "candidate_pool", candidate_pool)
         all_results.append(result)
 
-        out_path = output_dir / (
-            f"spatial_{label}_gfp_neighbor_c2l_perm_{int(radius_um)}um.csv"
-        )
+        out_path = gnc.perm_radius_path(output_dir, label, radius_um, annotation_col)
         gnc.write_csv(result, out_path)
         print(f"  Saved {out_path.name}")
 
@@ -433,7 +437,7 @@ def analyze_sample_permutation(
         return pd.DataFrame()
 
     combined = pd.concat(all_results, ignore_index=True)
-    combined_path = output_dir / f"spatial_{label}_gfp_neighbor_c2l_perm_all_radii.csv"
+    combined_path = gnc.perm_all_radii_path(output_dir, label, annotation_col)
     gnc.write_csv(combined, combined_path)
     print(f"  Saved {combined_path.name}")
     return combined
@@ -450,6 +454,7 @@ def main() -> None:
         None
     """
     args = parse_args()
+    annotation_col = gnc.resolve_annotation_col(args.annotation_col, args.c2l_col)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     input_files = gnc.discover_input_files(args.input_dir, args.samples)
@@ -458,7 +463,8 @@ def main() -> None:
 
     print(f"Found {len(input_files)} Loupe CSV(s) in {args.input_dir}")
     print(
-        f"Permutation settings: n_perm={args.n_perm}, seed={args.seed}, "
+        f"Annotation column: {annotation_col}; "
+        f"permutation settings: n_perm={args.n_perm}, seed={args.seed}, "
         f"candidate_pool={args.candidate_pool}"
     )
 
@@ -471,7 +477,7 @@ def main() -> None:
             args.bin_um,
             args.gfp_col,
             args.gfp_value,
-            args.c2l_col,
+            annotation_col,
             args.n_perm,
             args.seed,
             args.candidate_pool,
@@ -482,9 +488,9 @@ def main() -> None:
 
     if all_combined:
         summary = pd.concat(all_combined, ignore_index=True)
-        summary_path = args.output_dir / "all_samples_gfp_neighbor_c2l_perm_summary.csv"
-        gnc.write_csv(summary, summary_path)
-        print(f"\nSaved combined summary: {summary_path}")
+        combined_summary_path = gnc.perm_summary_path(args.output_dir, annotation_col)
+        gnc.write_csv(summary, combined_summary_path)
+        print(f"\nSaved combined summary: {combined_summary_path}")
 
 
 if __name__ == "__main__":

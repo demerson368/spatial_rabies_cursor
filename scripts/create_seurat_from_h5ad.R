@@ -11,13 +11,14 @@ sc <- import("scipy.sparse")
 
 #default
 h5ad <- "Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um.h5ad"
+out <- ""
 
 GetoptLong(
-    "h5ad=s",       "input spatial h5ad for conversion to seurat"
+    "h5ad=s",       "input spatial h5ad for conversion to seurat",
+    "out=s",        "output Seurat rds path (default: h5ad with .rds extension)"
 )
 
-#h5ad <- "Tuyu_Apr2026/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um.h5ad"
-output <- sub("\\.h5ad$", ".rds", h5ad)
+output <- if (nzchar(out)) out else sub("\\.h5ad$", ".rds", h5ad)
 adata <- ad$read_h5ad(h5ad)
 obs_names <- unlist(adata$obs_names$to_list(), use.names = FALSE)
 var_names <- unlist(adata$var_names$to_list(), use.names = FALSE)

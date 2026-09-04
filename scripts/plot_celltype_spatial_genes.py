@@ -2,10 +2,11 @@
 """Rank signature genes in cell2location-labeled bins and plot spatially.
 
 Loads a Loupe export CSV and matching extended h5ad, identifies spots with a
-target cell2location label (default P GABA), scores reference signature genes
-by mean count or normalized expression within those bins, writes a ranked CSV,
-a multi-panel spatial expression figure, and a separate bar chart of the
-ranked signature genes.
+target cell2location label, scores reference signature genes from
+``reference/signature_genes_by_cellName_wide.csv`` (long cellName,gene or wide
+column layout) by mean count or normalized expression within those bins, writes
+a ranked CSV, a multi-panel spatial expression figure, and a separate bar chart
+of the ranked signature genes.
 """
 
 from __future__ import annotations
@@ -27,7 +28,8 @@ COHORT = "Tuyu_Apr2026"
 DEFAULT_CELLTYPE_COL = "cell2location"
 DEFAULT_CELLTYPE_VALUE = "P GABA"
 DEFAULT_BARCODE_COL = "Barcode"
-DEFAULT_GENE_SET = "p_gaba_biomarkers.txt"
+DEFAULT_GENE_SET = "signature_genes_by_cellName_wide.csv"
+CELLTYPE_COLUMN_ALIASES = {"P GABA": "GABA"}
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "scripts"))
@@ -41,8 +43,28 @@ from celltype_biomarker_enrichment import (  # noqa: E402
     infer_label,
     load_gene_set,
     load_merged_adata,
-    output_stem,
 )
+
+
+def spatial_gene_output_stem(
+    label: str,
+    celltype_col: str,
+    celltype_slug_value: str,
+    suffix: str,
+) -> str:
+    """Build the filename stem for spatial gene ranking outputs.
+
+    Args:
+        label: Sample label.
+        celltype_col: Loupe column used for spot labels (e.g. ``cell2location``).
+        celltype_slug_value: Filesystem slug for the target cell type value.
+        suffix: Output kind suffix (e.g. ``signature_genes``, ``top_genes``).
+
+    Returns:
+        str: Stem like ``spatial_{label}_{col_slug}_{celltype_slug}_{suffix}``.
+    """
+    col_slug = celltype_slug(celltype_col)
+    return f"spatial_{label}_{col_slug}_{celltype_slug_value}_{suffix}"
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,7 +90,18 @@ def parse_args() -> argparse.Namespace:
         "--gene_set_file",
         type=Path,
         default=_REPO_ROOT / "reference" / DEFAULT_GENE_SET,
-        help="Reference signature gene list (comma- or newline-separated)",
+        help=(
+            "Reference signature genes: CSV with cellName/genes columns, wide "
+            "CSV (one column per cell type), or plain .txt gene lists"
+        ),
+    )
+    parser.add_argument(
+        "--gene_set_column",
+        default=None,
+        help=(
+            "Column or cellName value in gene_set_file when it differs from "
+            "--celltype_value (e.g. GABA for merged broad cell2location labels)"
+        ),
     )
     parser.add_argument(
         "--output_dir",
@@ -131,6 +164,161 @@ def parse_args() -> argparse.Namespace:
         help="Rank genome-wide instead of the reference signature gene set",
     )
     return parser.parse_args()
+
+
+def _dedupe_genes(genes: list[str]) -> list[str]:
+    """Return unique gene symbols preserving first occurrence order.
+
+    Args:
+        genes: Gene symbols possibly containing duplicates or blanks.
+
+    Returns:
+        list[str]: Deduplicated non-empty gene symbols.
+    """
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for gene in genes:
+        if not gene or gene.lower() == "nan" or gene in seen:
+            continue
+        seen.add(gene)
+        ordered.append(gene)
+    return ordered
+
+
+def _resolve_celltype_key(celltype_value: str, gene_set_column: str | None) -> str:
+    """Resolve the cell-type key used to look up signature genes.
+
+    Args:
+        celltype_value: Target label from ``--celltype_value``.
+        gene_set_column: Optional override from ``--gene_set_column``.
+
+    Returns:
+        str: Key used to match CSV columns or ``cellName`` values.
+    """
+    if gene_set_column:
+        return gene_set_column.strip()
+    return CELLTYPE_COLUMN_ALIASES.get(celltype_value, celltype_value)
+
+
+def _resolve_wide_column(columns: pd.Index, celltype_key: str) -> str:
+    """Resolve a wide-format CSV column name for a cell type.
+
+    Args:
+        columns: Column names from a wide signature CSV.
+        celltype_key: Cell type label to match.
+
+    Returns:
+        str: Matching column name.
+
+    Raises:
+        ValueError: If no matching column is found.
+    """
+    cols = [str(c) for c in columns]
+    if celltype_key in cols:
+        return celltype_key
+
+    aliased = CELLTYPE_COLUMN_ALIASES.get(celltype_key, celltype_key)
+    if aliased in cols:
+        return aliased
+
+    lower_to_actual = {c.lower(): c for c in cols}
+    for candidate in (celltype_key, aliased):
+        if candidate.lower() in lower_to_actual:
+            return lower_to_actual[candidate.lower()]
+
+    available = ", ".join(cols)
+    raise ValueError(
+        f"No signature column found for cell type {celltype_key!r}. "
+        f"Available columns: {available}"
+    )
+
+
+def _available_cellnames(df: pd.DataFrame) -> str:
+    """Format unique cellName values for error messages.
+
+    Args:
+        df: Signature table containing a ``cellName`` column.
+
+    Returns:
+        str: Comma-separated sorted cell type names.
+    """
+    return ", ".join(sorted(df["cellName"].astype(str).str.strip().unique()))
+
+
+def _match_long_cellnames(series: pd.Series, celltype_key: str) -> pd.Series:
+    """Build a boolean mask for rows matching a cell type in long-format CSVs.
+
+    Args:
+        series: ``cellName`` column from a long signature CSV.
+        celltype_key: Cell type label to match.
+
+    Returns:
+        pd.Series: Boolean mask over ``series``.
+    """
+    names = series.astype(str).str.strip()
+    candidates = {celltype_key, CELLTYPE_COLUMN_ALIASES.get(celltype_key, celltype_key)}
+    lower_names = names.str.lower()
+    mask = pd.Series(False, index=series.index)
+    for candidate in candidates:
+        mask |= names == candidate
+        mask |= lower_names == candidate.lower()
+    return mask
+
+
+def load_signature_genes_for_celltype(
+    path: Path,
+    celltype_value: str,
+    gene_set_column: str | None = None,
+) -> list[str]:
+    """Load signature genes for one cell type from a reference file.
+
+    Supports:
+    - Compact CSV with ``cellName,n_genes,genes`` (one row per cell type)
+    - Long CSV with ``cellName,gene`` columns (one row per gene)
+    - Wide CSV with one column per cell type (gene lists top-to-bottom)
+    - Plain-text gene lists via :func:`load_gene_set`
+
+    Args:
+        path: Path to the reference gene set file.
+        celltype_value: Target cell type label from ``--celltype_value``.
+        gene_set_column: Optional override for the CSV column or cellName value.
+
+    Returns:
+        list[str]: Deduplicated signature gene symbols for the cell type.
+
+    Raises:
+        ValueError: If the cell type cannot be resolved in a CSV file.
+        FileNotFoundError: If ``path`` does not exist.
+    """
+    celltype_key = _resolve_celltype_key(celltype_value, gene_set_column)
+    if path.suffix.lower() != ".csv":
+        return load_gene_set(path)
+
+    df = pd.read_csv(path)
+    if "cellName" in df.columns and "genes" in df.columns:
+        mask = _match_long_cellnames(df["cellName"], celltype_key)
+        if not mask.any():
+            raise ValueError(
+                f"No signature genes found for cell type {celltype_key!r} in {path}. "
+                f"Available cellName values: {_available_cellnames(df)}"
+            )
+        gene_blob = " ".join(df.loc[mask, "genes"].dropna().astype(str))
+        genes = [g.strip() for g in gene_blob.replace(";", ",").split(",") if g.strip()]
+        return _dedupe_genes(genes)
+
+    if "cellName" in df.columns and "gene" in df.columns:
+        mask = _match_long_cellnames(df["cellName"], celltype_key)
+        if not mask.any():
+            raise ValueError(
+                f"No signature genes found for cell type {celltype_key!r} in {path}. "
+                f"Available cellName values: {_available_cellnames(df)}"
+            )
+        genes = df.loc[mask, "gene"].dropna().astype(str).str.strip().tolist()
+        return _dedupe_genes(genes)
+
+    col = _resolve_wide_column(df.columns, celltype_key)
+    genes = df[col].dropna().astype(str).str.strip().tolist()
+    return _dedupe_genes(genes)
 
 
 def _target_expression_stats(
@@ -457,7 +645,9 @@ def main() -> None:
     args.celltype_slug = args.celltype_slug or celltype_slug(args.celltype_value)
     label = args.label or infer_label(args.loupe_csv)
     suffix = "signature_genes" if not args.all_genes else "top_genes"
-    file_stem = f"{output_stem(label, args.celltype_slug)}_{suffix}"
+    file_stem = spatial_gene_output_stem(
+        label, args.celltype_col, args.celltype_slug, suffix
+    )
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     adata = load_merged_adata(
@@ -479,7 +669,9 @@ def main() -> None:
         )
         signature_mode = False
     else:
-        reference_genes = load_gene_set(args.gene_set_file)
+        reference_genes = load_signature_genes_for_celltype(
+            args.gene_set_file, args.celltype_value, args.gene_set_column
+        )
         gene_map = build_gene_map(reference_genes, adata.var_names.tolist())
         print(
             f"Loaded {len(reference_genes)} signature genes from {args.gene_set_file}; "

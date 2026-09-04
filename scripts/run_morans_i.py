@@ -37,6 +37,11 @@ def main() -> None:
         help="If >0, restrict to this many highly variable genes before Moran's I "
         "(much faster on Visium HD). 0 = all genes.",
     )
+    parser.add_argument(
+        "--ref_suffix",
+        default="",
+        help="Optional ref_tag filename suffix (e.g. _merged_nontumor_v1_subclass)",
+    )
     args = parser.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -64,7 +69,9 @@ def main() -> None:
     )
 
     moran = adata.uns["moranI"].sort_values("I", ascending=False)
-    csv_path = os.path.join(args.out_dir, f"spatial_{args.label}_moranI.csv")
+    csv_path = os.path.join(
+        args.out_dir, f"spatial_{args.label}{args.ref_suffix}_moranI.csv"
+    )
     moran.to_csv(csv_path)
     print(f"Saved: {csv_path}")
     print(moran.head(20))
@@ -72,7 +79,9 @@ def main() -> None:
     top_svgs = moran.head(args.n_top).index.tolist()
     if top_svgs:
         sq.pl.spatial_scatter(adata, color=top_svgs, size=1.5, ncols=3)
-        png_path = os.path.join(args.out_dir, f"spatial_svgs_{args.label}.png")
+        png_path = os.path.join(
+            args.out_dir, f"spatial_svgs_{args.label}{args.ref_suffix}.png"
+        )
         plt.savefig(png_path, dpi=300, bbox_inches="tight")
         plt.close()
         print(f"Saved: {png_path}")
