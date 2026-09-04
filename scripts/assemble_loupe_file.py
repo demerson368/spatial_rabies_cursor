@@ -1,4 +1,5 @@
 import argparse
+import os
 import scanpy as sc
 import squidpy as sq
 import pandas as pd
@@ -463,12 +464,15 @@ def main():
     h5ad_ext = args.h5ad_ext or (
         f"{processed_dir}/spatial_{label}{'' if ref_tag == 'v2' else f'_{ref_tag}'}_ext.h5ad"
     )
-    c2l_h5ad = args.c2l_h5ad or f"../results_cell2location/c2l_spatial_{label}_{ref_tag}/sp.h5ad"
+    c2l_h5ad = args.c2l_h5ad
+
     transfer_txt = args.transfer_txt or (
         f"{processed_dir}/spatial_{label}{'' if ref_tag == 'v2' else f'_{ref_tag}'}_predicted.id_transfer.txt"
     )
     cellestimate_txt = args.cellestimate_txt or (
-        f"{processed_dir}/spatial_{label}{args.cellestimate_cf}_cellType.txt"
+        f"{processed_dir}/spatial_{label}{'' if ref_tag == 'v2' else f'_{ref_tag}'}_{args.cellestimate_cf}_cellType.txt"
+        if ref_tag != "v2"
+        else f"{processed_dir}/spatial_{label}{args.cellestimate_cf}_cellType.txt"
     )
 
     print(
@@ -665,14 +669,17 @@ def main():
 
 
     ## Add cell2location
-    adata_cell_2_location = sc.read_h5ad(c2l_h5ad)
+    if c2l_h5ad and os.path.isfile(c2l_h5ad):
+        adata_cell_2_location = sc.read_h5ad(c2l_h5ad)
+        cell2loc_series = adata_cell_2_location.obs["dominant_celltype"].rename("cell2location")
+        loupe_export["cell2location"] = loupe_export["Barcode"].map(cell2loc_series)
+        adata.obs["cell2location"] = loupe_export["cell2location"]
+    else:
+        print(f"Skipping cell2location (no file: {c2l_h5ad!r})")
+        loupe_export["cell2location"] = "Unknown"
+        adata.obs["cell2location"] = "Unknown"
 
-    cell2loc_series = adata_cell_2_location.obs["dominant_celltype"].rename("cell2location")
 
-    # Map onto loupe_export by barcode — unmatched barcodes get NaN
-    loupe_export["cell2location"] = loupe_export["Barcode"].map(cell2loc_series)
-
-    adata.obs["cell2location"] = loupe_export["cell2location"]
     adata.obs["predicted.id"] = loupe_export["predicted.id"].astype(str)
     adata.obs["predicted.id"] = adata.obs["predicted.id"].fillna("Unknown").astype(str)
     adata.obs["cellestimate"] = loupe_export["cellestimate"]

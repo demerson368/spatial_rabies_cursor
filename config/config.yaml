@@ -12,36 +12,51 @@ samples_tsv: "config/samples.tsv"
 conda_prefix: "/home/demerson/.conda/envs/spatial"
 
 # scRNA reference (cell2location + Seurat transfer)
-ref_out: "/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_comprehensive_v1" # older ref: "/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53"
-ref_label: "merged_comprehensive_v1" # older ref: "merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53"
-ref_file: "integrated_comprehensive_v1_mmv2_ref_rawcounts_with_labels.h5ad" # older ref: "integrated_ref_rawcounts_with_labels.h5ad"
-ref_rds: "integrated_comprehensive_v1_mmv2_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" # older ref: "integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_J53_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds"
-# Tag ref-dependent outputs (cell2location, label transfer, loupe CSV). Change this when
-# testing a new reference so results for the same spatial label do not overwrite each other.
+ref_out: "/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_broad/" #"/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_tuyusig_8_22/" #"/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_broad_unique/" #"/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52/" #"/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_broad/" #"/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_20260126/Dan_Emerson_analysis/Merged_X10X11X12/" #"/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_comprehensive_v1" # older ref: "/research/groups/mackgrp/home/common/Analysis/seqData.Tuyu/RABV_scRNAseq_202507/Dan_Emerson_analysis/merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53"
+ref_label: "merged_dJ33_J51_D87_J58_J59_J61_D85_J52_broad" #"merged_dJ33_J51_D87_J58_J59_J61_D85_J52_tuyusig_8_22" #"merged_dJ33_J51_D87_J58_J59_J61_D85_J52_broad_unique" #"merged_dJ33_J51_D87_J58_J59_J61_D85_J52" #"merged_dJ33_J51_D87_J58_J59_J61_D85_J52_broad" #"Merged_X10X11X12" #"merged_comprehensive_v1" # older ref: "merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53"
+ref_file: "integrated_ref_rawcounts_with_labels.h5ad" #"integrated_ref_rawcounts_with_labels.h5ad" #"integrated_comprehensive_v1_mmv2_ref_rawcounts_with_labels.h5ad" # older ref: "integrated_ref_rawcounts_with_labels.h5ad"
+ref_rds: "integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_broad_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" #"integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_tuyusig_8_22_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" #"integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_broad_uniq_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" #"integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" #"integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_broad_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" #"integrated_X10_X11_X12_GFP_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" #"integrated_comprehensive_v1_mmv2_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds" # older ref: "integrated_dJ33_J51_D87_J58_J59_J61_D85_J52_J53_ambient_corrected_v2_mito_doublet_removal_SCT_update.rds"
+# Tag ref-dependent annotation outputs (cellestimate, transfer, cell2location, loupe, morans).
+# create_seurat output (spatial_{label}.rds) is untagged — spatial preprocess only.
 # Example target: for_loupe/spatial_{label}_compv1_mmv2_for_loupe.csv
-ref_tag:  "compv1_mmv2"    #v2 refers to older reference (avoids putting ref_tag in name)  "compv1_mmv2"  refers to newer ref
+# merged_nontumor_v1_broad = dJ33_J51_D87_J58_J59_J61_D85_J52 broad
+ref_tag:  "merged_nontumor_v1_broad" #"merged_nontumor_v1_tuyusig_8_22" #"merged_nontumor_v1_broad_uniq" #"merged_nontumor_v1_broad" #"comp_X10X11X12" #"compv1_mmv2"    #v2 refers to older reference (avoids putting ref_tag in name)  "compv1_mmv2"  refers to newer ref
+
+#merged_nontumor_v1_tuyusig_8_22 = dJ33_J51_D87_J58_J59_J61_D85_J52 + tuyusig_8_2 marker
+#merged_nontumor_v1_broad_uniq = dJ33_J51_D87_J58_J59_J61_D85_J52 broad + unique
+#"merged_nontumor_v1_subclass" =  dJ33_J51_D87_J58_J59_J61_D85_J52 subclass
+#"merged_nontumor_v1_broad" = dJ33_J51_D87_J58_J59_J61_D85_J52 broad category for GABA and glut
+#"compv1_mmv2' = all samples against brain.mmv2 classifications
+#"comp_X10X11X12" = X10_X11_X12 against subclass
+#v2 = dJ33_J51_D87_J58_J59_J61_D85_J52_J53 against subclass
+
 
 # Cellestimate (CellTypeEstimate)
 cellestimate_script: "/research/groups/mackgrp/home/demerson/CellTypeEstimate/cte4so.R"
-cellestimate_db: "Yao_et_al_mouse_format_addendum"
-cellestimate_cf: "Yao_et_al_mouse_format"
+cellestimate_db: "Yao_et_al_mouse_format_addendum" #excel file in db
+cellestimate_cf: "Yao_et_al_mouse_format" #"Yao_et_al_mouse_format_broad" #output name to include yao et al allen + broad category glut and gaba
+cellestimate_sheet: "subsclass_immune_merged_v1" #"tuyusig_8_22" #"subsclass_immune_merged_v1_uniq" #"subsclass_immune" #"subsclass_immune_merged_v1" # default; Excel sheet in {db}.xlsx (e.g. Sheet1, Sheet2)
+cellestimate_one_class_split: "TRUE"   #make sure to use split from immune category (default already TRUE for cte4so.R) # passed as string to match cte4so.R / ScTypeAnnotation
+# run_cellestimate uses --assay Spatial (binned Visium spots); SCT is for manual scRNA runs only
 
 # Marker atlas for assemble_loupe tlscore / NNLS (Allen atlas Excel).
 # Update alongside ref_tag when switching scRNA reference context.
 #
 # compv1_mmv2 (current):
-marker_excel: "/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/mm.brain.v2.xlsx"
-marker_sheet: "Sheet1"
-marker_cluster_col: "geneSymbolmore1"
-marker_class_col: "Class"
-marker_subclass_col: "subClass"
+#marker_excel: #"/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/mm.brain.v2.xlsx"
+#marker_sheet: "Sheet1"
+#marker_cluster_col: "geneSymbolmore1"
+#marker_class_col: "Class"
+#marker_subclass_col: "subClass"
 #
+#
+#parameters for using with nnls, tlscore inside of assemble_loupe_file.py (note: will need to clean up scripts.  Remove these analysis as separate from final merging...)
 # Legacy ref_tag v2 (yao atlas):
-# marker_excel: "/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/yao_et_al_Nature_2023.xlsx"
-# marker_sheet: "supertype_annotation"
-# marker_cluster_col: "supertype.markers.combo"
-# marker_class_col: "class_label"
-# marker_subclass_col: "subclass_label"
+marker_excel: "/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/Yao_et_al_mouse_format_addendum.xlsx" #"/research/groups/mackgrp/home/demerson/CellTypeEstimate/db/yao_et_al_Nature_2023.xlsx"
+marker_sheet: "subsclass_immune_merged_v1" #"tuyusig_8_22" #"subsclass_immune_merged_v1_uniq" #"subsclass_immune" #"subsclass_immune_merged_v1" #"supertype_annotation"
+marker_cluster_col: "geneSymbolmore1" #"subclass.markers.combo" #"supertype.markers.combo"
+marker_class_col: "cellName" #"class_label"
+marker_subclass_col: "subClass" #"subclass_label"
 
 # Space Ranger processed data root (per-sample sr_out in samples.tsv)
 plumm_processed_root: "/research/groups/plummgrp/projects/Visium_855118_Steve_Mack_Siri_09232025/common/Tuyu_Apr2026/Processed"
@@ -52,3 +67,10 @@ morans_n_jobs: 4
 morans_n_top: 6
 # Restrict to this many HVGs before Moran's I (0 = all genes; slow on Visium HD)
 morans_n_genes: 3000
+
+# Non-tumor spot filter (optional; enable per sample in samples.tsv)
+zr_fusion_max_score: 0
+
+# cell2location spatial model (default N=2 preserves existing output paths)
+cell2location_n_cells_per_location: 2
+cell2location_detection_alpha: 200

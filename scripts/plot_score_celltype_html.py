@@ -47,6 +47,7 @@ from score_gaba_glut_signatures import (  # noqa: E402
     prepare_if_background,
     resolve_h5ad_path,
     resolve_if_image_path,
+    score_display_mask,
     score_signature_set,
     score_single_gene,
 )
@@ -192,8 +193,18 @@ def parse_args() -> argparse.Namespace:
         default=0.8,
         help="Opacity of score markers so IF shows through (0-1)",
     )
-    parser.add_argument("--score_vmin", type=float, default=None, help="Score colormap min")
-    parser.add_argument("--score_vmax", type=float, default=None, help="Score colormap max")
+    parser.add_argument(
+        "--score_vmin",
+        type=float,
+        default=None,
+        help="Minimum score for colormap; spots below this value are hidden (default: data min)",
+    )
+    parser.add_argument(
+        "--score_vmax",
+        type=float,
+        default=None,
+        help="Maximum score for colormap; spots above this value are hidden (default: data max)",
+    )
     parser.add_argument(
         "--use_preprocess_h5ad",
         action="store_true",
@@ -772,6 +783,8 @@ def build_interactive_figure(
         initial_title = f"{overlay.score_label} — no highlight"
 
     if_rgb = if_array_to_uint8_rgb(if_bg_display)
+    score_mask = score_display_mask(scores, overlay.vmin, overlay.vmax)
+    score_hover = [hover[i] for i in np.where(score_mask)[0]]
     fig = go.Figure()
     fig.add_trace(
         go.Image(
@@ -789,13 +802,13 @@ def build_interactive_figure(
 
     fig.add_trace(
         go.Scatter(
-            x=coords[:, 0],
-            y=coords[:, 1],
+            x=coords[score_mask, 0],
+            y=coords[score_mask, 1],
             mode="markers",
             name=overlay.score_label,
             marker=dict(
                 size=spot_size,
-                color=scores,
+                color=scores[score_mask],
                 colorscale="Magma",
                 cmin=overlay.vmin,
                 cmax=overlay.vmax,
@@ -803,7 +816,7 @@ def build_interactive_figure(
                 line=dict(width=0),
                 colorbar=dict(title=overlay.score_label),
             ),
-            text=hover,
+            text=score_hover,
             hoverinfo="text",
         )
     )

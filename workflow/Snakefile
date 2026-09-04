@@ -14,18 +14,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from functions import (  # noqa: E402
-    cell2location_path,
-    cellestimate_path,
-    h5ad_path,
+    cellestimate_cf_arg,
+    cellestimate_filename_suffix,
+    c2l_n_cells_suffix,
     load_samples,
     loupe_path,
-    processed_dir,
+    nontumor_filter_labels,
     ref_path_suffix,
     ref_tag,
-    rds_path,
     sr_bin_dir,
     sr_out_dir,
-    transfer_path,
+    zr_fusion_max_score,
 )
 
 configfile: "../config/config.yaml"
@@ -33,23 +32,41 @@ configfile: "../config/config.yaml"
 SAMPLES = load_samples(config)
 LABELS = SAMPLES.index.tolist()
 
-# Output path templates (Snakemake 7: outputs must be strings, not lambdas)
+# Output path templates (Snakemake 7: static templates for unfiltered-default paths)
 COHORT = config["cohort"]
 REF_TAG = ref_tag(config)
 REF_SUFFIX = ref_path_suffix(config)
+CELLESTIMATE_SUFFIX = cellestimate_filename_suffix(config)
+CELLESTIMATE_CF_ARG = cellestimate_cf_arg(config)
+C2L_N_CELLS_SUFFIX = c2l_n_cells_suffix(config)
 REF_H5AD = str(Path(config["ref_out"]) / config["ref_file"])
 REF_RDS = str(Path(config["ref_out"]) / config["ref_rds"])
 PROCESSED = f"data/processed/{COHORT}"
 H5AD_OUT = f"{PROCESSED}/spatial_{{label}}.h5ad"
+H5AD_NONTUMOR = f"{PROCESSED}/spatial_{{label}}_nontumor.h5ad"
+FILTER_REPORT = f"{PROCESSED}/spatial_{{label}}_nontumor_filter_report.csv"
+FILTER_QC = f"results/{COHORT}/spatial_{{label}}_zr_fusion_nontumor_qc.png"
 H5AD_EXT = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_ext.h5ad"
+H5AD_EXT_NONTUMOR = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_nontumor_ext.h5ad"
 QC_PLOT = f"{PROCESSED}/spatial_qc_{{label}}.png"
-MORAN_CSV = f"{PROCESSED}/spatial_{{label}}_moranI.csv"
-SVG_PLOT = f"{PROCESSED}/spatial_svgs_{{label}}.png"
+MORAN_CSV = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_moranI.csv"
+MORAN_CSV_NONTUMOR = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_nontumor_moranI.csv"
+SVG_PLOT = f"{PROCESSED}/spatial_svgs_{{label}}{REF_SUFFIX}.png"
+SVG_PLOT_NONTUMOR = f"{PROCESSED}/spatial_svgs_{{label}}{REF_SUFFIX}_nontumor.png"
 RDS_OUT = f"{PROCESSED}/spatial_{{label}}.rds"
+RDS_NONTUMOR = f"{PROCESSED}/spatial_{{label}}_nontumor.rds"
 TRANSFER_OUT = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_predicted.id_transfer.txt"
-CELLESTIMATE_OUT = f"{PROCESSED}/spatial_{{label}}{config['cellestimate_cf']}_cellType.txt"
-C2L_OUT = f"results_cell2location/c2l_spatial_{{label}}_{REF_TAG}/sp.h5ad"
+TRANSFER_NONTUMOR_OUT = (
+    f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_nontumor_predicted.id_transfer.txt"
+)
+CELLESTIMATE_OUT = f"{PROCESSED}/spatial_{{label}}{CELLESTIMATE_SUFFIX}_cellType.txt"
+CELLESTIMATE_NONTUMOR_OUT = (
+    f"{PROCESSED}/spatial_{{label}}_nontumor{CELLESTIMATE_SUFFIX}_cellType.txt"
+)
+C2L_OUT = f"results_cell2location/c2l_spatial_{{label}}_{REF_TAG}{C2L_N_CELLS_SUFFIX}/sp.h5ad"
+C2L_NONTUMOR_OUT = f"results_cell2location/c2l_spatial_{{label}}_{REF_TAG}{C2L_N_CELLS_SUFFIX}_nontumor/sp.h5ad"
 LOUPE_OUT = f"for_loupe/spatial_{{label}}{REF_SUFFIX}_for_loupe.csv"
+LOUPE_NONTUMOR_OUT = f"for_loupe/spatial_{{label}}{REF_SUFFIX}_nontumor_for_loupe.csv"
 CONDA_PREFIX = config["conda_prefix"]
 PYTHON = f"{CONDA_PREFIX}/bin/python"
 RSCRIPT = f"{CONDA_PREFIX}/bin/Rscript"
@@ -85,7 +102,68 @@ def assemble_labels():
     return SAMPLES[mask].index.tolist()
 
 
+def unfiltered_seurat_labels():
+    mask = (SAMPLES.run_seurat_transfer | SAMPLES.run_cellestimate) & ~SAMPLES.run_nontumor_filter
+    return SAMPLES[mask].index.tolist()
+
+
+def filtered_seurat_labels():
+    mask = (SAMPLES.run_seurat_transfer | SAMPLES.run_cellestimate) & SAMPLES.run_nontumor_filter
+    return SAMPLES[mask].index.tolist()
+
+
+def unfiltered_transfer_labels():
+    return SAMPLES[SAMPLES.run_seurat_transfer & ~SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def filtered_transfer_labels():
+    return SAMPLES[SAMPLES.run_seurat_transfer & SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def unfiltered_cellestimate_labels():
+    return SAMPLES[SAMPLES.run_cellestimate & ~SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def filtered_cellestimate_labels():
+    return SAMPLES[SAMPLES.run_cellestimate & SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def unfiltered_cell2location_labels():
+    return SAMPLES[SAMPLES.run_cell2location & ~SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def filtered_cell2location_labels():
+    return SAMPLES[SAMPLES.run_cell2location & SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def unfiltered_morans_labels():
+    return SAMPLES[SAMPLES.run_morans_i & ~SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def filtered_morans_labels():
+    return SAMPLES[SAMPLES.run_morans_i & SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def unfiltered_assemble_labels():
+    mask = (
+        SAMPLES.run_seurat_transfer
+        | SAMPLES.run_cellestimate
+        | SAMPLES.run_cell2location
+    ) & ~SAMPLES.run_nontumor_filter
+    return SAMPLES[mask].index.tolist()
+
+
+def filtered_assemble_labels():
+    mask = (
+        SAMPLES.run_seurat_transfer
+        | SAMPLES.run_cellestimate
+        | SAMPLES.run_cell2location
+    ) & SAMPLES.run_nontumor_filter
+    return SAMPLES[mask].index.tolist()
+
+
 include: "rules/preprocess.smk"
+include: "rules/filter_spots.smk"
 include: "rules/morans_i.smk"
 include: "rules/seurat.smk"
 include: "rules/cellestimate.smk"
@@ -95,7 +173,4 @@ include: "rules/assemble_loupe.smk"
 
 rule all:
     input:
-        expand(
-            "for_loupe/spatial_{label}_for_loupe.csv",
-            label=assemble_labels(),
-        ),
+        [loupe_path(config, label, SAMPLES) for label in assemble_labels()],
