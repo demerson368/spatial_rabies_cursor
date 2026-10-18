@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
-# One-time install for R packages used by CellTypeEstimate and Snakemake R rules.
+# One-time install for R packages used by CellTypeEstimate, RCTD, and Snakemake R rules.
 # Run after creating/recreating the spatial conda env:
 #   /home/demerson/.conda/envs/spatial/bin/Rscript scripts/install_r_pipeline_packages.R
 
 cran <- "https://cloud.r-project.org"
 
-need_cran <- c("HGNChelper", "GetoptLong", "readxl", "openxlsx")
+need_cran <- c("HGNChelper", "GetoptLong", "readxl", "openxlsx", "jsonlite", "devtools")
 missing <- need_cran[!vapply(need_cran, requireNamespace, logical(1), quietly = TRUE)]
 
 if (length(missing)) {
@@ -21,3 +21,14 @@ for (pkg in need_cran) {
   }
   message("OK: ", pkg)
 }
+
+if (!requireNamespace("spacexr", quietly = TRUE)) {
+  message("Installing spacexr from GitHub...")
+  options(timeout = 600)
+  devtools::install_github("dmcable/spacexr", build_vignettes = FALSE)
+}
+
+if (!requireNamespace("spacexr", quietly = TRUE)) {
+  stop("spacexr still missing after install", call. = FALSE)
+}
+message("OK: spacexr")
