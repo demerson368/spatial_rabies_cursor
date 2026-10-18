@@ -1,4 +1,4 @@
-# Step 2 — cell2location (GPU; current script hardcodes 008um bin)
+# Step 2 — cell2location (GPU)
 
 rule run_cell2location:
     input:
@@ -12,11 +12,11 @@ rule run_cell2location:
         ref_file=config["ref_file"],
         ref_tag=REF_TAG,
         meta_h5ad=lambda wildcards: str(
-            Path(config["project_dir"]) / H5AD_OUT.format(label=wildcards.label)
+            Path(config["project_dir"]) / H5AD_OUT.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         spatial_dir=lambda wildcards: str(
             Path(config["project_dir"])
-            / f"results_cell2location/c2l_spatial_{wildcards.label}_{REF_TAG}{C2L_N_CELLS_SUFFIX}"
+            / Path(C2L_OUT.format(cohort=wildcards.cohort, label=wildcards.label)).parent
         ),
         sr_out=lambda wildcards: sr_out_dir(config, SAMPLES.loc[wildcards.label]),
         min_counts=lambda wildcards: int(SAMPLES.loc[wildcards.label, "min_counts_c2l"]),
@@ -28,8 +28,9 @@ rule run_cell2location:
         conda_prefix=CONDA_PREFIX,
         python=PYTHON,
     log:
-        f"logs/cell2location_{{label}}_{REF_TAG}.log",
+        f"logs/cell2location_{{cohort}}_{{label}}_{REF_TAG}.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(unfiltered_cell2location_labels()) if unfiltered_cell2location_labels() else "NEVER_MATCH",
     resources:
         mem_mb=200000,
@@ -48,6 +49,7 @@ rule run_cell2location:
             --ref_tag {params.ref_tag} \
             --sr_out {params.sr_out} \
             --label {wildcards.label} \
+            --cohort {wildcards.cohort} \
             --min_counts_per_bin {params.min_counts} \
             --bin_um {params.bin_um} \
             --meta_h5ad {params.meta_h5ad} \
@@ -70,11 +72,11 @@ rule run_cell2location_nontumor:
         ref_file=config["ref_file"],
         ref_tag=REF_TAG,
         meta_h5ad=lambda wildcards: str(
-            Path(config["project_dir"]) / H5AD_NONTUMOR.format(label=wildcards.label)
+            Path(config["project_dir"]) / H5AD_NONTUMOR.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         spatial_dir=lambda wildcards: str(
             Path(config["project_dir"])
-            / f"results_cell2location/c2l_spatial_{wildcards.label}_{REF_TAG}{C2L_N_CELLS_SUFFIX}_nontumor"
+            / Path(C2L_NONTUMOR_OUT.format(cohort=wildcards.cohort, label=wildcards.label)).parent
         ),
         sr_out=lambda wildcards: sr_out_dir(config, SAMPLES.loc[wildcards.label]),
         min_counts=lambda wildcards: int(SAMPLES.loc[wildcards.label, "min_counts_c2l"]),
@@ -86,8 +88,9 @@ rule run_cell2location_nontumor:
         conda_prefix=CONDA_PREFIX,
         python=PYTHON,
     log:
-        f"logs/cell2location_{{label}}_{REF_TAG}_nontumor.log",
+        f"logs/cell2location_{{cohort}}_{{label}}_{REF_TAG}_nontumor.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(filtered_cell2location_labels()) if filtered_cell2location_labels() else "NEVER_MATCH",
     resources:
         mem_mb=200000,
@@ -106,6 +109,7 @@ rule run_cell2location_nontumor:
             --ref_tag {params.ref_tag} \
             --sr_out {params.sr_out} \
             --label {wildcards.label} \
+            --cohort {wildcards.cohort} \
             --min_counts_per_bin {params.min_counts} \
             --bin_um {params.bin_um} \
             --meta_h5ad {params.meta_h5ad} \

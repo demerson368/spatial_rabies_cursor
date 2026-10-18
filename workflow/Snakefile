@@ -16,14 +16,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from functions import (  # noqa: E402
     cellestimate_cf_arg,
     cellestimate_filename_suffix,
+    cellestimate_path,
     c2l_n_cells_suffix,
+    cell2location_path,
+    cohort_for_label,
+    filter_qc_path,
+    filter_report_path,
+    h5ad_ext_path,
+    h5ad_path,
     load_samples,
     loupe_path,
+    moran_csv_path,
+    moran_svg_path,
     nontumor_filter_labels,
+    nontumor_h5ad_path,
+    processed_dir_rel,
+    qc_plot_path,
+    rds_path,
     ref_path_suffix,
     ref_tag,
     sr_bin_dir,
     sr_out_dir,
+    transfer_path,
+    rctd_dir,
+    rctd_path,
+    resolve_rctd_mode,
     zr_fusion_max_score,
 )
 
@@ -32,8 +49,7 @@ configfile: "../config/config.yaml"
 SAMPLES = load_samples(config)
 LABELS = SAMPLES.index.tolist()
 
-# Output path templates (Snakemake 7: static templates for unfiltered-default paths)
-COHORT = config["cohort"]
+# Ref-scoped and cohort-agnostic path templates (per-sample cohort paths use functions.py)
 REF_TAG = ref_tag(config)
 REF_SUFFIX = ref_path_suffix(config)
 CELLESTIMATE_SUFFIX = cellestimate_filename_suffix(config)
@@ -41,11 +57,13 @@ CELLESTIMATE_CF_ARG = cellestimate_cf_arg(config)
 C2L_N_CELLS_SUFFIX = c2l_n_cells_suffix(config)
 REF_H5AD = str(Path(config["ref_out"]) / config["ref_file"])
 REF_RDS = str(Path(config["ref_out"]) / config["ref_rds"])
-PROCESSED = f"data/processed/{COHORT}"
+# Per-sample cohort path templates (Snakemake: outputs must be static strings, not functions)
+COHORTS = "|".join(sorted(SAMPLES["cohort"].unique()))
+PROCESSED = "data/processed/{cohort}"
 H5AD_OUT = f"{PROCESSED}/spatial_{{label}}.h5ad"
 H5AD_NONTUMOR = f"{PROCESSED}/spatial_{{label}}_nontumor.h5ad"
 FILTER_REPORT = f"{PROCESSED}/spatial_{{label}}_nontumor_filter_report.csv"
-FILTER_QC = f"results/{COHORT}/spatial_{{label}}_zr_fusion_nontumor_qc.png"
+FILTER_QC = "results/{cohort}/spatial_{label}_zr_fusion_nontumor_qc.png"
 H5AD_EXT = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_ext.h5ad"
 H5AD_EXT_NONTUMOR = f"{PROCESSED}/spatial_{{label}}{REF_SUFFIX}_nontumor_ext.h5ad"
 QC_PLOT = f"{PROCESSED}/spatial_qc_{{label}}.png"
@@ -63,10 +81,20 @@ CELLESTIMATE_OUT = f"{PROCESSED}/spatial_{{label}}{CELLESTIMATE_SUFFIX}_cellType
 CELLESTIMATE_NONTUMOR_OUT = (
     f"{PROCESSED}/spatial_{{label}}_nontumor{CELLESTIMATE_SUFFIX}_cellType.txt"
 )
-C2L_OUT = f"results_cell2location/c2l_spatial_{{label}}_{REF_TAG}{C2L_N_CELLS_SUFFIX}/sp.h5ad"
-C2L_NONTUMOR_OUT = f"results_cell2location/c2l_spatial_{{label}}_{REF_TAG}{C2L_N_CELLS_SUFFIX}_nontumor/sp.h5ad"
-LOUPE_OUT = f"for_loupe/spatial_{{label}}{REF_SUFFIX}_for_loupe.csv"
-LOUPE_NONTUMOR_OUT = f"for_loupe/spatial_{{label}}{REF_SUFFIX}_nontumor_for_loupe.csv"
+C2L_ROOT = "results_cell2location/{cohort}"
+C2L_OUT = f"{C2L_ROOT}/c2l_spatial_{{label}}_{REF_TAG}{C2L_N_CELLS_SUFFIX}/sp.h5ad"
+C2L_NONTUMOR_OUT = (
+    f"{C2L_ROOT}/c2l_spatial_{{label}}_{REF_TAG}{C2L_N_CELLS_SUFFIX}_nontumor/sp.h5ad"
+)
+RCTD_ROOT = "results_rctd/{cohort}"
+RCTD_OUT = f"{RCTD_ROOT}/rctd_spatial_{{label}}_{REF_TAG}/sp.h5ad"
+RCTD_OUT_FULL = f"{RCTD_ROOT}/rctd_spatial_{{label}}_{REF_TAG}_full/sp.h5ad"
+RCTD_NONTUMOR_OUT = f"{RCTD_ROOT}/rctd_spatial_{{label}}_{REF_TAG}_nontumor/sp.h5ad"
+RCTD_NONTUMOR_OUT_FULL = (
+    f"{RCTD_ROOT}/rctd_spatial_{{label}}_{REF_TAG}_full_nontumor/sp.h5ad"
+)
+LOUPE_OUT = f"for_loupe/{{cohort}}/spatial_{{label}}{REF_SUFFIX}_for_loupe.csv"
+LOUPE_NONTUMOR_OUT = f"for_loupe/{{cohort}}/spatial_{{label}}{REF_SUFFIX}_nontumor_for_loupe.csv"
 CONDA_PREFIX = config["conda_prefix"]
 PYTHON = f"{CONDA_PREFIX}/bin/python"
 RSCRIPT = f"{CONDA_PREFIX}/bin/Rscript"
@@ -88,6 +116,10 @@ def cell2location_labels():
     return SAMPLES[SAMPLES.run_cell2location].index.tolist()
 
 
+def rctd_labels():
+    return SAMPLES[SAMPLES.run_rctd].index.tolist()
+
+
 def morans_labels():
     return SAMPLES[SAMPLES.run_morans_i].index.tolist()
 
@@ -98,6 +130,7 @@ def assemble_labels():
         SAMPLES.run_seurat_transfer
         | SAMPLES.run_cellestimate
         | SAMPLES.run_cell2location
+        | SAMPLES.run_rctd
     )
     return SAMPLES[mask].index.tolist()
 
@@ -136,6 +169,46 @@ def filtered_cell2location_labels():
     return SAMPLES[SAMPLES.run_cell2location & SAMPLES.run_nontumor_filter].index.tolist()
 
 
+def unfiltered_rctd_labels():
+    return SAMPLES[SAMPLES.run_rctd & ~SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def filtered_rctd_labels():
+    return SAMPLES[SAMPLES.run_rctd & SAMPLES.run_nontumor_filter].index.tolist()
+
+
+def unfiltered_rctd_doublet_labels():
+    return [
+        label
+        for label in unfiltered_rctd_labels()
+        if resolve_rctd_mode(config, SAMPLES, label) == "doublet"
+    ]
+
+
+def unfiltered_rctd_full_labels():
+    return [
+        label
+        for label in unfiltered_rctd_labels()
+        if resolve_rctd_mode(config, SAMPLES, label) == "full"
+    ]
+
+
+def filtered_rctd_doublet_labels():
+    return [
+        label
+        for label in filtered_rctd_labels()
+        if resolve_rctd_mode(config, SAMPLES, label) == "doublet"
+    ]
+
+
+def filtered_rctd_full_labels():
+    return [
+        label
+        for label in filtered_rctd_labels()
+        if resolve_rctd_mode(config, SAMPLES, label) == "full"
+    ]
+
+
 def unfiltered_morans_labels():
     return SAMPLES[SAMPLES.run_morans_i & ~SAMPLES.run_nontumor_filter].index.tolist()
 
@@ -149,6 +222,7 @@ def unfiltered_assemble_labels():
         SAMPLES.run_seurat_transfer
         | SAMPLES.run_cellestimate
         | SAMPLES.run_cell2location
+        | SAMPLES.run_rctd
     ) & ~SAMPLES.run_nontumor_filter
     return SAMPLES[mask].index.tolist()
 
@@ -158,6 +232,7 @@ def filtered_assemble_labels():
         SAMPLES.run_seurat_transfer
         | SAMPLES.run_cellestimate
         | SAMPLES.run_cell2location
+        | SAMPLES.run_rctd
     ) & SAMPLES.run_nontumor_filter
     return SAMPLES[mask].index.tolist()
 
@@ -168,6 +243,7 @@ include: "rules/morans_i.smk"
 include: "rules/seurat.smk"
 include: "rules/cellestimate.smk"
 include: "rules/cell2location.smk"
+include: "rules/rctd.smk"
 include: "rules/assemble_loupe.smk"
 
 

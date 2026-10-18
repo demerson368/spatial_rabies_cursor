@@ -9,18 +9,20 @@ rule filter_nontumor_spots:
         filter_qc=FILTER_QC,
     params:
         max_score=lambda wc: zr_fusion_max_score(SAMPLES, wc.label, config),
-        h5ad_in=lambda wc: str(Path(config["project_dir"]) / H5AD_OUT.format(label=wc.label)),
-        h5ad_out=lambda wc: str(Path(config["project_dir"]) / H5AD_NONTUMOR.format(label=wc.label)),
-        report_out=lambda wc: str(Path(config["project_dir"]) / FILTER_REPORT.format(label=wc.label)),
-        qc_out=lambda wc: str(Path(config["project_dir"]) / FILTER_QC.format(label=wc.label)),
+        h5ad_in=lambda wc: str(Path(config["project_dir"]) / H5AD_OUT.format(cohort=wc.cohort, label=wc.label)),
+        h5ad_out=lambda wc: str(Path(config["project_dir"]) / H5AD_NONTUMOR.format(cohort=wc.cohort, label=wc.label)),
+        report_out=lambda wc: str(Path(config["project_dir"]) / FILTER_REPORT.format(cohort=wc.cohort, label=wc.label)),
+        qc_out=lambda wc: str(Path(config["project_dir"]) / FILTER_QC.format(cohort=wc.cohort, label=wc.label)),
+        cohort=lambda wc: wc.cohort,
         label=lambda wildcards: wildcards.label,
         scripts_dir=str(Path(config["project_dir"]) / "scripts"),
         project_dir=config["project_dir"],
         conda_prefix=CONDA_PREFIX,
         python=PYTHON,
     log:
-        "logs/filter_nontumor_{label}.log",
+        "logs/filter_nontumor_{cohort}_{label}.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(nontumor_filter_labels(SAMPLES)) if nontumor_filter_labels(SAMPLES) else "NEVER_MATCH",
     resources:
         mem_mb=50000,
@@ -33,7 +35,7 @@ rule filter_nontumor_spots:
         {params.python} filter_nontumor_spots.py \
             --h5ad {params.h5ad_in} \
             --label {params.label} \
-            --cohort {COHORT} \
+            --cohort {params.cohort} \
             --max_score {params.max_score} \
             --out_h5ad {params.h5ad_out} \
             --report_csv {params.report_out} \

@@ -8,13 +8,17 @@ rule preprocess_spatial:
         qc_plot=QC_PLOT,
     params:
         label=lambda wildcards: wildcards.label,
+        cohort=lambda wildcards: wildcards.cohort,
         scripts_dir=str(Path(config["project_dir"]) / "scripts"),
         project_dir=config["project_dir"],
         conda_prefix=CONDA_PREFIX,
         python=PYTHON,
         runtime = "5h",
     log:
-        "logs/preprocess_{label}.log",
+        "logs/preprocess_{cohort}_{label}.log",
+    wildcard_constraints:
+        cohort=COHORTS,
+        label="|".join(LABELS),
     threads: 4
     resources:
         mem_mb=100000,
@@ -26,5 +30,6 @@ rule preprocess_spatial:
         mkdir -p {params.project_dir}/logs
         cd {params.scripts_dir}
         {params.python} spatial_pipeline.py {input.sr_bin} {params.label} \
+            --cohort {params.cohort} \
             > {params.project_dir}/{log} 2>&1
         """

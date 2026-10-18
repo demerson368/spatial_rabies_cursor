@@ -19,8 +19,9 @@ rule run_morans_i:
         conda_prefix=CONDA_PREFIX,
         python=PYTHON,
     log:
-        f"logs/morans_i_{{label}}_{REF_TAG}.log",
+        f"logs/morans_i_{{cohort}}_{{label}}_{REF_TAG}.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(unfiltered_morans_labels()) if unfiltered_morans_labels() else "NEVER_MATCH",
     threads: 4
     resources:
@@ -62,8 +63,9 @@ rule run_morans_i_nontumor:
         conda_prefix=CONDA_PREFIX,
         python=PYTHON,
     log:
-        f"logs/morans_i_{{label}}_{REF_TAG}_nontumor.log",
+        f"logs/morans_i_{{cohort}}_{{label}}_{REF_TAG}_nontumor.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(filtered_morans_labels()) if filtered_morans_labels() else "NEVER_MATCH",
     threads: 4
     resources:
@@ -89,7 +91,7 @@ rule run_morans_i_nontumor:
 
 rule all_morans:
     input:
-        expand(MORAN_CSV, label=unfiltered_morans_labels()),
-        expand(SVG_PLOT, label=unfiltered_morans_labels()),
-        expand(MORAN_CSV_NONTUMOR, label=filtered_morans_labels()),
-        expand(SVG_PLOT_NONTUMOR, label=filtered_morans_labels()),
+        [MORAN_CSV.format(cohort=SAMPLES.loc[label, "cohort"], label=label) for label in unfiltered_morans_labels()],
+        [SVG_PLOT.format(cohort=SAMPLES.loc[label, "cohort"], label=label) for label in unfiltered_morans_labels()],
+        [MORAN_CSV_NONTUMOR.format(cohort=SAMPLES.loc[label, "cohort"], label=label) for label in filtered_morans_labels()],
+        [SVG_PLOT_NONTUMOR.format(cohort=SAMPLES.loc[label, "cohort"], label=label) for label in filtered_morans_labels()],

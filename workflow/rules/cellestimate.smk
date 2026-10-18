@@ -12,14 +12,15 @@ rule run_cellestimate:
         sheet=config.get("cellestimate_sheet", "subsclass_immune"),
         one_class_split=config.get("cellestimate_one_class_split", "TRUE"),
         rds_abs=lambda wildcards: str(
-            Path(config["project_dir"]) / RDS_OUT.format(label=wildcards.label)
+            Path(config["project_dir"]) / RDS_OUT.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         project_dir=config["project_dir"],
         conda_prefix=CONDA_PREFIX,
         rscript=RSCRIPT,
     log:
-        f"logs/cellestimate_{{label}}_{REF_TAG}.log",
+        f"logs/cellestimate_{{cohort}}_{{label}}_{REF_TAG}.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(unfiltered_cellestimate_labels()) if unfiltered_cellestimate_labels() else "NEVER_MATCH",
     resources:
         mem_mb=50000,
@@ -51,14 +52,15 @@ rule run_cellestimate_nontumor:
         sheet=config.get("cellestimate_sheet", "subsclass_immune"),
         one_class_split=config.get("cellestimate_one_class_split", "TRUE"),
         rds_abs=lambda wildcards: str(
-            Path(config["project_dir"]) / RDS_NONTUMOR.format(label=wildcards.label)
+            Path(config["project_dir"]) / RDS_NONTUMOR.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         project_dir=config["project_dir"],
         conda_prefix=CONDA_PREFIX,
         rscript=RSCRIPT,
     log:
-        f"logs/cellestimate_{{label}}_{REF_TAG}_nontumor.log",
+        f"logs/cellestimate_{{cohort}}_{{label}}_{REF_TAG}_nontumor.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(filtered_cellestimate_labels()) if filtered_cellestimate_labels() else "NEVER_MATCH",
     resources:
         mem_mb=50000,

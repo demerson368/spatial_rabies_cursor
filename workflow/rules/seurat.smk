@@ -6,14 +6,15 @@ rule create_seurat:
     output:
         rds=RDS_OUT,
     params:
-        h5ad_rel=lambda wildcards: f"{COHORT}/spatial_{wildcards.label}.h5ad",
+        h5ad_rel=lambda wildcards: H5AD_OUT.format(cohort=wildcards.cohort, label=wildcards.label).replace("data/processed/", ""),
         scripts_dir=str(Path(config["project_dir"]) / "scripts"),
         project_dir=config["project_dir"],
         conda_prefix=CONDA_PREFIX,
         rscript=RSCRIPT,
     log:
-        "logs/create_seurat_{label}.log",
+        "logs/create_seurat_{cohort}_{label}.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(unfiltered_seurat_labels()) if unfiltered_seurat_labels() else "NEVER_MATCH",
     resources:
         mem_mb=50000,
@@ -34,14 +35,15 @@ rule create_seurat_nontumor:
     output:
         rds=RDS_NONTUMOR,
     params:
-        h5ad_rel=lambda wildcards: f"{COHORT}/spatial_{wildcards.label}_nontumor.h5ad",
+        h5ad_rel=lambda wildcards: H5AD_NONTUMOR.format(cohort=wildcards.cohort, label=wildcards.label).replace("data/processed/", ""),
         scripts_dir=str(Path(config["project_dir"]) / "scripts"),
         project_dir=config["project_dir"],
         conda_prefix=CONDA_PREFIX,
         rscript=RSCRIPT,
     log:
-        "logs/create_seurat_{label}_nontumor.log",
+        "logs/create_seurat_{cohort}_{label}_nontumor.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(filtered_seurat_labels()) if filtered_seurat_labels() else "NEVER_MATCH",
     resources:
         mem_mb=50000,
@@ -66,10 +68,10 @@ rule label_transfer:
         transfer=TRANSFER_OUT,
     params:
         rds_abs=lambda wildcards: str(
-            Path(config["project_dir"]) / RDS_OUT.format(label=wildcards.label)
+            Path(config["project_dir"]) / RDS_OUT.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         out_abs=lambda wildcards: str(
-            Path(config["project_dir"]) / TRANSFER_OUT.format(label=wildcards.label)
+            Path(config["project_dir"]) / TRANSFER_OUT.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         ref_rds=str(Path(config["ref_out"]) / config["ref_rds"]),
         scripts_dir=str(Path(config["project_dir"]) / "scripts"),
@@ -77,8 +79,9 @@ rule label_transfer:
         conda_prefix=CONDA_PREFIX,
         rscript=RSCRIPT,
     log:
-        f"logs/label_transfer_{{label}}_{REF_TAG}.log",
+        f"logs/label_transfer_{{cohort}}_{{label}}_{REF_TAG}.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(unfiltered_transfer_labels()) if unfiltered_transfer_labels() else "NEVER_MATCH",
     resources:
         mem_mb=50000,
@@ -105,10 +108,10 @@ rule label_transfer_nontumor:
         transfer=TRANSFER_NONTUMOR_OUT,
     params:
         rds_abs=lambda wildcards: str(
-            Path(config["project_dir"]) / RDS_NONTUMOR.format(label=wildcards.label)
+            Path(config["project_dir"]) / RDS_NONTUMOR.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         out_abs=lambda wildcards: str(
-            Path(config["project_dir"]) / TRANSFER_NONTUMOR_OUT.format(label=wildcards.label)
+            Path(config["project_dir"]) / TRANSFER_NONTUMOR_OUT.format(cohort=wildcards.cohort, label=wildcards.label)
         ),
         ref_rds=str(Path(config["ref_out"]) / config["ref_rds"]),
         scripts_dir=str(Path(config["project_dir"]) / "scripts"),
@@ -116,8 +119,9 @@ rule label_transfer_nontumor:
         conda_prefix=CONDA_PREFIX,
         rscript=RSCRIPT,
     log:
-        f"logs/label_transfer_{{label}}_{REF_TAG}_nontumor.log",
+        f"logs/label_transfer_{{cohort}}_{{label}}_{REF_TAG}_nontumor.log",
     wildcard_constraints:
+        cohort=COHORTS,
         label="|".join(filtered_transfer_labels()) if filtered_transfer_labels() else "NEVER_MATCH",
     resources:
         mem_mb=50000,
