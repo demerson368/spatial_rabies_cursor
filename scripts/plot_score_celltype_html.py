@@ -4,8 +4,8 @@
 Loads an extended spatial h5ad, merges ``cellestimate`` labels from a
 ``for_loupe/*.csv`` file, scores a gene or signature set (reusing
 ``score_gaba_glut_signatures.py``), and writes a self-contained Plotly HTML
-with a dropdown to highlight bins by cell type. The registered IF image is the
-bottom layer; gene/fusion score and cellestimate highlights are overlaid on top.
+with a dropdown to highlight bins by cell type. Layers (bottom to top): IF
+image, faded cellestimate highlight borders, gene/fusion score scatter.
 
 Requires: pip install plotly
 
@@ -32,18 +32,20 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgb
 from PIL import Image
 from skimage import transform
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "scripts"))
 
-from gfp_neighbor_cell2location import build_celltype_color_map  # noqa: E402
 from score_gaba_glut_signatures import (  # noqa: E402
     gene_obs_slug,
     infer_label_from_h5ad,
     parse_gene_args,
-    plot_score_on_if,
     prepare_if_background,
     resolve_h5ad_path,
     resolve_if_image_path,
@@ -78,7 +80,74 @@ DEFAULT_IF_DIR = (
 )
 DEFAULT_BARCODE_COL = "Barcode"
 DEFAULT_CELLTYPE_COL = "cellestimate"
+DEFAULT_SCORE_COLORMAP = "Purples" #"magma" #"Yellows" #"Greens"
 CELLTYPE_COL_ALIASES = {"cell_estimate": "cellestimate"}
+UBCLASS_COLS: dict[str, str] = {
+    "IT-ET Glut": "#F21D1D",
+    "NP-CT-L6b Glut": "#F23F1D",
+    "OB-CR Glut": "#F2601D",
+    "DG-IMN Glut": "#F2821D",
+    "OB-IMN GABA": "#F2A41D",
+    "CTX-CGE GABA": "#F2C51D",
+    "CTX-MGE GABA": "#F2E71D",
+    "CNU-MGE GABA": "#DCF21D",
+    "CNU-LGE GABA": "#BAF21D",
+    "CNU-HYa GABA": "#98F21D",
+    "LSX GABA": "#77F21D",
+    "HY GABA": "#55F21D",
+    "CNU-HYa Glut": "#34F21D",
+    "HY Glut": "#1DF228",
+    "HY Gnrh1 Glut": "#1DF24A",
+    "HY MM Glut": "#1DF26C",
+    "MH-LH Glut": "#1DF28D",
+    "TH Glut": "#1DF2AF",
+    "MB Glut": "#1DF2D1",
+    "MB GABA": "#1DF2F2",
+    "MB Dopa": "#1DD1F2",
+    "MB-HB Sero": "#AFAFAF",
+    "P Glut": "#1D8DF2",
+    "MY Glut": "#1D6CF2",
+    "Pineal Glut": "#1D4AF2",
+    "P GABA": "#1D28F2",
+    "MY GABA": "#341DF2",
+    "CB GABA": "#551DF2",
+    "CB Glut": "#771DF2",
+    "Astro-Epen": "#981DF2",
+    "OPC-Oligo": "#BA1DF2",
+    "OEC": "#ff7034",
+    "Vascular": "#964B00",
+    "Microglia NN": "#F21DC5",
+    "BAM NN": "#000000",
+    "Monocytes NN": "#F21D82",
+    "DC NN": "#F21D60",
+    "Lymphoid NN": "#F21D3F",
+    "GABA": "#1D28F2",
+    "Glut": "#34F21D",
+}
+UBCLASS_FALLBACK_COLOR = "#808080"
+
+
+def build_ubclass_color_map(
+    cell_types: list[str] | set[str],
+) -> dict[str, tuple[float, float, float]]:
+    """Assign Allen subclass colors to cell-type labels for plotting.
+
+    Args:
+        cell_types: Cell type names to include in the map.
+
+    Returns:
+        dict[str, tuple[float, float, float]]: Label to RGB tuple in [0, 1].
+    """
+    color_map: dict[str, tuple[float, float, float]] = {}
+    for label in sorted(set(cell_types)):
+        hex_color = UBCLASS_COLS.get(label, UBCLASS_FALLBACK_COLOR)
+        if label not in UBCLASS_COLS:
+            warnings.warn(
+                f"No UBCLASS_COLS entry for {label!r}; using gray",
+                stacklevel=2,
+            )
+        color_map[label] = to_rgb(hex_color)
+    return color_map
 
 
 @dataclass(frozen=True)
@@ -125,6 +194,12 @@ def parse_args() -> argparse.Namespace:
         "--highlight_celltype",
         default=None,
         help="Initial cell type to highlight (e.g. Glut)",
+    )
+    parser.add_argument(
+        "--highlight_opacity",
+        type=float,
+        default=0.45,
+        help="Opacity of cellestimate highlight borders (0-1)",
     )
     parser.add_argument("--if_image", type=Path, default=None, help="IF TIFF/PNG path")
     parser.add_argument(
@@ -552,11 +627,12 @@ def spatial_pixel_coords(adata: sc.AnnData, img_key: str) -> np.ndarray:
     return np.asarray(adata.obsm["spatial"]) * scale
 
 
-def rgba_to_plotly(color: tuple[float, ...] | str) -> str:
+def rgba_to_plotly(color: tuple[float, ...] | str, alpha: float = 1.0) -> str:
     """Convert a matplotlib RGB or RGBA tuple to a Plotly rgba() string.
 
     Args:
         color: RGB or RGBA tuple in [0, 1], or an existing color string.
+        alpha: Alpha override in [0, 1]; ignored for string colors.
 
     Returns:
         str: Plotly-compatible color string.
@@ -565,12 +641,33 @@ def rgba_to_plotly(color: tuple[float, ...] | str) -> str:
         return color
     if len(color) == 3:
         r, g, b = color
-        a = 1.0
     elif len(color) == 4:
-        r, g, b, a = color
+        r, g, b, _ = color
     else:
         raise ValueError(f"Expected RGB or RGBA tuple, got length {len(color)}")
-    return f"rgba({int(r * 255)},{int(g * 255)},{int(b * 255)},{a:.3f})"
+    return f"rgba({int(r * 255)},{int(g * 255)},{int(b * 255)},{alpha:.3f})"
+
+
+def color_to_matplotlib_rgba(
+    color: tuple[float, ...],
+    alpha: float,
+) -> tuple[float, float, float, float]:
+    """Convert a matplotlib RGB or RGBA tuple to an RGBA tuple.
+
+    Args:
+        color: RGB or RGBA tuple in [0, 1].
+        alpha: Alpha value in [0, 1] applied to the output.
+
+    Returns:
+        tuple[float, float, float, float]: RGBA values in [0, 1].
+    """
+    if len(color) == 3:
+        r, g, b = color
+    elif len(color) == 4:
+        r, g, b, _ = color
+    else:
+        raise ValueError(f"Expected RGB or RGBA tuple, got length {len(color)}")
+    return (float(r), float(g), float(b), float(alpha))
 
 
 def if_array_to_uint8_rgb(if_bg: np.ndarray) -> np.ndarray:
@@ -707,6 +804,97 @@ def write_spot_table(
     df.to_csv(out_path, index=False)
 
 
+def plot_score_celltype_align_check(
+    adata: sc.AnnData,
+    coords: np.ndarray,
+    if_bg: np.ndarray,
+    overlay: ScoreOverlay,
+    out_path: Path,
+    title: str,
+    highlight_celltype: str | None,
+    color_map: dict[str, tuple[float, ...]],
+    spot_size: float,
+    highlight_opacity: float,
+    if_alpha: float = 0.85,
+    dpi: int = 300,
+) -> None:
+    """Save an alignment PNG with masked score overlay and optional highlight borders.
+
+    Args:
+        adata: AnnData with score and ``_cellestimate_plot`` columns.
+        coords: Pixel coordinates shaped ``(n_spots, 2)``.
+        if_bg: Aligned IF background array in [0, 1].
+        overlay: Score overlay metadata including display limits.
+        out_path: Output PNG path.
+        title: Figure title.
+        highlight_celltype: Cell type to outline, if any.
+        color_map: Cell-type name to matplotlib RGB tuple.
+        spot_size: Matplotlib scatter marker size for score bins.
+        highlight_opacity: Alpha for highlight border rings in [0, 1].
+        if_alpha: Alpha for the IF background image.
+        dpi: PNG resolution.
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If ``highlight_opacity`` is outside [0, 1].
+    """
+    if not 0.0 <= highlight_opacity <= 1.0:
+        raise ValueError(
+            f"highlight_opacity must be in [0, 1], got {highlight_opacity}"
+        )
+
+    scores = adata.obs[overlay.score_col].to_numpy(dtype=float)
+    celltypes = adata.obs["_cellestimate_plot"].astype(str)
+    display_mask = score_display_mask(scores, overlay.vmin, overlay.vmax)
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    if if_bg.ndim == 2:
+        ax.imshow(if_bg, cmap="gray", alpha=if_alpha)
+    else:
+        ax.imshow(if_bg, alpha=if_alpha)
+
+    if highlight_celltype and highlight_celltype in color_map:
+        highlight_mask = celltypes.to_numpy() == highlight_celltype
+        edge_color = color_to_matplotlib_rgba(
+            color_map[highlight_celltype],
+            highlight_opacity,
+        )
+        ax.scatter(
+            coords[highlight_mask, 0],
+            coords[highlight_mask, 1],
+            s=spot_size,
+            facecolors="none",
+            edgecolors=[edge_color],
+            linewidths=0.8,
+            zorder=3,
+        )
+
+    scatter = ax.scatter(
+        coords[display_mask, 0],
+        coords[display_mask, 1],
+        c=scores[display_mask],
+        cmap=DEFAULT_SCORE_COLORMAP,
+        s=spot_size,
+        alpha=0.9,
+        linewidths=0,
+        zorder=4,
+        vmin=overlay.vmin,
+        vmax=overlay.vmax,
+    )
+    cbar = fig.colorbar(scatter, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label(f"{overlay.score_label} [{overlay.vmin:g}, {overlay.vmax:g}]")
+
+    ax.set_title(title, fontsize=12)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
 def build_interactive_figure(
     adata: sc.AnnData,
     coords: np.ndarray,
@@ -717,8 +905,9 @@ def build_interactive_figure(
     highlight_celltype: str | None,
     spot_size: float,
     score_opacity: float = 0.8,
+    highlight_opacity: float = 0.45,
 ) -> "go.Figure":
-    """Build a single-panel Plotly figure with IF under score and highlight layers.
+    """Build a Plotly figure with IF, highlight borders, and score on top.
 
     Args:
         adata: AnnData with score and ``_cellestimate_plot`` columns.
@@ -729,17 +918,22 @@ def build_interactive_figure(
         celltype_col: Resolved Loupe column name (for titles).
         highlight_celltype: Initial highlighted cell type, if any.
         spot_size: Base marker size for score layer.
-        score_opacity: Opacity for score markers (IF visible in gaps).
+        score_opacity: Opacity for score markers above highlight borders.
+        highlight_opacity: Opacity for cellestimate highlight border rings.
 
     Returns:
         go.Figure: Interactive Plotly figure.
 
     Raises:
         ImportError: If plotly is not installed.
-        ValueError: If ``score_opacity`` is outside [0, 1].
+        ValueError: If opacity values are outside [0, 1].
     """
     if not 0.0 <= score_opacity <= 1.0:
         raise ValueError(f"score_opacity must be in [0, 1], got {score_opacity}")
+    if not 0.0 <= highlight_opacity <= 1.0:
+        raise ValueError(
+            f"highlight_opacity must be in [0, 1], got {highlight_opacity}"
+        )
 
     try:
         import plotly.graph_objects as go
@@ -753,7 +947,7 @@ def build_interactive_figure(
     scores = adata.obs[overlay.score_col].to_numpy(dtype=float)
     celltypes = adata.obs["_cellestimate_plot"].astype(str)
     unique_types = sorted({ct for ct in celltypes.unique() if ct and ct.lower() != "nan"})
-    color_map = build_celltype_color_map(unique_types)
+    color_map = build_ubclass_color_map(unique_types)
 
     if highlight_celltype and highlight_celltype not in unique_types:
         warnings.warn(
@@ -800,31 +994,10 @@ def build_interactive_figure(
         )
     )
 
-    fig.add_trace(
-        go.Scatter(
-            x=coords[score_mask, 0],
-            y=coords[score_mask, 1],
-            mode="markers",
-            name=overlay.score_label,
-            marker=dict(
-                size=spot_size,
-                color=scores[score_mask],
-                colorscale="Magma",
-                cmin=overlay.vmin,
-                cmax=overlay.vmax,
-                opacity=score_opacity,
-                line=dict(width=0),
-                colorbar=dict(title=overlay.score_label),
-            ),
-            text=score_hover,
-            hoverinfo="text",
-        )
-    )
-
     highlight_size = spot_size * 1.0
     for cell_type in unique_types:
         mask = celltypes.to_numpy() == cell_type
-        border_color = rgba_to_plotly(color_map[cell_type])
+        border_color = rgba_to_plotly(color_map[cell_type], alpha=highlight_opacity)
         visible = cell_type == highlight_celltype
         fig.add_trace(
             go.Scatter(
@@ -844,8 +1017,29 @@ def build_interactive_figure(
             )
         )
 
+    fig.add_trace(
+        go.Scatter(
+            x=coords[score_mask, 0],
+            y=coords[score_mask, 1],
+            mode="markers",
+            name=overlay.score_label,
+            marker=dict(
+                size=spot_size,
+                color=scores[score_mask],
+                colorscale=DEFAULT_SCORE_COLORMAP,
+                cmin=overlay.vmin,
+                cmax=overlay.vmax,
+                opacity=score_opacity,
+                line=dict(width=0),
+                colorbar=dict(title=overlay.score_label),
+            ),
+            text=score_hover,
+            hoverinfo="text",
+        )
+    )
+
     n_highlight = len(unique_types)
-    visibility_none = [True, True] + [False] * n_highlight
+    visibility_none = [True] + [False] * n_highlight + [True]
     buttons: list[dict] = [
         dict(
             label="None",
@@ -857,8 +1051,8 @@ def build_interactive_figure(
         )
     ]
     for idx, cell_type in enumerate(unique_types):
-        visibility = [True, True] + [False] * n_highlight
-        visibility[idx + 2] = True
+        visibility = [True] + [False] * n_highlight + [True]
+        visibility[1 + idx] = True
         buttons.append(
             dict(
                 label=cell_type,
@@ -914,6 +1108,10 @@ def main() -> None:
     if not 0.0 <= args.score_opacity <= 1.0:
         raise ValueError(
             f"--score_opacity must be in [0, 1], got {args.score_opacity}"
+        )
+    if not 0.0 <= args.highlight_opacity <= 1.0:
+        raise ValueError(
+            f"--highlight_opacity must be in [0, 1], got {args.highlight_opacity}"
         )
     if args.score_vmin is not None and args.score_vmax is not None:
         if args.score_vmin >= args.score_vmax:
@@ -979,6 +1177,20 @@ def main() -> None:
     )
 
     coords = spatial_pixel_coords(adata, args.img_key)
+    celltypes = adata.obs["_cellestimate_plot"].astype(str)
+    unique_types = sorted(
+        {ct for ct in celltypes.unique() if ct and ct.lower() != "nan"}
+    )
+    color_map = build_ubclass_color_map(unique_types)
+    highlight_celltype = args.highlight_celltype
+    if highlight_celltype and highlight_celltype not in unique_types:
+        warnings.warn(
+            f"--highlight_celltype {highlight_celltype!r} not in Loupe labels; "
+            f"available: {', '.join(unique_types)}",
+            stacklevel=2,
+        )
+        highlight_celltype = unique_types[0] if unique_types else None
+
     fig = build_interactive_figure(
         adata,
         coords=coords,
@@ -986,9 +1198,10 @@ def main() -> None:
         extent_shape=if_bg_full.shape[:2],
         overlay=overlay,
         celltype_col=celltype_col,
-        highlight_celltype=args.highlight_celltype,
+        highlight_celltype=highlight_celltype,
         spot_size=args.spot_size,
         score_opacity=args.score_opacity,
+        highlight_opacity=args.highlight_opacity,
     )
 
     html_path = output_html_path(output_dir, label, overlay.score_slug)
@@ -999,16 +1212,17 @@ def main() -> None:
     html_path.parent.mkdir(parents=True, exist_ok=True)
     save_if_png(if_bg_full, if_png_path)
     save_if_png(if_bg_html, if_html_png_path)
-    plot_score_on_if(
+    plot_score_celltype_align_check(
         adata,
-        score_col=overlay.score_col,
+        coords=coords,
         if_bg=if_bg_full,
+        overlay=overlay,
         out_path=align_check_path,
         title=f"{overlay.score_label} alignment check",
-        img_key=args.img_key,
+        highlight_celltype=highlight_celltype,
+        color_map=color_map,
         spot_size=args.spot_size,
-        score_vmin=overlay.vmin,
-        score_vmax=overlay.vmax,
+        highlight_opacity=args.highlight_opacity,
     )
     fig.write_html(html_path, include_plotlyjs="cdn", full_html=True)
     write_spot_table(adata, coords, overlay.score_col, celltype_col, csv_path)

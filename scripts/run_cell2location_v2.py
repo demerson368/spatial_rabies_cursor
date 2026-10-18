@@ -32,9 +32,17 @@ from scipy.sparse import issparse
 import squidpy as sq
 import math
 import cell2location
-from cell2location.utils.filtering import filter_genes
 from cell2location.models import RegressionModel
 from cell2location.models import Cell2location
+
+from rctd_preprocess import (
+    clean_labels,
+    ensure_raw_counts,
+    filter_reference_genes,
+    filter_sparse_bins,
+    harmonize_genes,
+    load_raw_spatial,
+)
 
 
 
@@ -55,53 +63,6 @@ def ensure_dir(path):
 
     os.makedirs(path, exist_ok=True)
 
-def ensure_raw_counts(adata, name="adata"):
-
-    if "counts" in adata.layers:
-        adata.X = adata.layers["counts"].copy()
-    elif adata.raw is not None:
-        adata = adata.raw.to_adata()
-    if sp.issparse(adata.X):
-        adata.X.data = np.round(adata.X.data).astype(np.int32)
-        adata.X.eliminate_zeros()
-    else:
-        adata.X = np.round(adata.X).astype(np.int32)
-    assert adata.X.max() > 20, f"{name}: X does not look like raw counts"
-    assert np.all(adata.X.data % 1 == 0), f"{name}: counts not integer"
-
-    return adata
-
-def clean_labels(adata, label_key, batch_key):
-
-    lab = adata.obs[label_key].astype(str).str.strip()
-    batch = adata.obs[batch_key].astype(str).str.strip()
-    keep = ~lab.isin(["nan", "NaN", "None", ""]) & lab.notna()
-    adata = adata[keep].copy()
-    lab = lab[keep]
-    batch = batch[keep]
-    vc = lab.value_counts()
-    keep_types = vc[vc >= 5].index
-    adata = adata[lab.isin(keep_types)].copy()
-    adata.obs[label_key] = pd.Categorical(adata.obs.loc[adata.obs_names, label_key], categories=sorted(keep_types))
-    adata.obs[batch_key] = pd.Categorical(adata.obs[batch_key].astype(str))
-
-    return adata
-
-def harmonize_genes(adata, inf_aver):
-
-    if adata.var_names.duplicated().any():
-        print(f"Deduplicating {adata.var_names.duplicated().sum()} spatial gene names")
-        adata.var_names_make_unique()
-    inf_aver = inf_aver[~inf_aver.index.duplicated(keep="first")].copy()
-    shared = pd.Index(adata.var_names).intersection(inf_aver.index)
-    if len(shared) == 0:
-        raise ValueError("No shared genes between spatial and reference")
-    print(f"Shared genes: {len(shared)}")
-    adata = adata[:, shared].copy()
-    inf_aver = inf_aver.loc[shared, :].copy()
-
-    return adata, inf_aver
-
 def extract_inf_aver(adata_ref):
 
     factor_names = adata_ref.uns["mod"]["factor_names"]
@@ -116,41 +77,6 @@ def extract_inf_aver(adata_ref):
     inf_aver.columns = factor_names
 
     return inf_aver
-
-def load_raw_spatial(sr_out, bin_size="008um", meta_h5ad=None):
-
-    bin_dir = f"{sr_out}/binned_outputs/square_{bin_size}"
-    adata = sq.read.visium(bin_dir, counts_file="filtered_feature_bc_matrix.h5")
-    adata = ensure_raw_counts(adata, "spatial")
-    if meta_h5ad is not None:
-        meta = sc.read_h5ad(meta_h5ad)
-        common = adata.obs_names.intersection(meta.obs_names)
-        print(f"Spatial overlap with metadata h5ad: {len(common)} / {adata.n_obs}")
-        if len(common) == 0:
-            raise ValueError(
-                f"No barcode overlap between spatial bins ({bin_size}, n={adata.n_obs}) "
-                f"and metadata h5ad ({meta_h5ad}, n={meta.n_obs}). "
-                "Check that --bin_um matches the bin size used to build meta_h5ad."
-            )
-        adata = adata[common].copy()
-        for col in meta.obs.columns:
-            if col not in adata.obs.columns:
-                adata.obs[col] = meta.obs.loc[common, col]
-        if "spatial" in meta.obsm and "spatial" not in adata.obsm:
-            adata.obsm["spatial"] = meta[common].obsm["spatial"].copy()
-    adata.var["mt"] = adata.var_names.str.lower().str.startswith("mt-")
-    adata = adata[:, ~adata.var["mt"]].copy()
-    
-    return adata
-
-def filter_sparse_bins(adata, min_counts):
-    if min_counts <= 0:
-        return adata
-    n_before = adata.n_obs
-    sc.pp.filter_cells(adata, min_counts=min_counts)
-    print("filtering spatial adata")
-    print(f"Bins with >= {min_counts} UMIs: {adata.n_obs} / {n_before}")
-    return adata
 
 
 def c2l_n_cells_dir_suffix(n_cells_per_location: int) -> str:
@@ -192,6 +118,12 @@ def parse_args() -> argparse.Namespace:
         "--label",
         type=str,
         help="spatial name label. Assumed in Tuyu_Apr2026 subdirectory",
+    )
+    parser.add_argument(
+        "--cohort",
+        type=str,
+        default=None,
+        help="Cohort subdirectory under results_cell2location/ and data/processed/",
     )
     parser.add_argument(
         "--min_counts_per_bin",
@@ -254,9 +186,18 @@ def main() -> None:
             f"data/processed/Tuyu_Apr2026/spatial_{label}.h5ad"
         )
 
+    cohort = args.cohort
+    if not cohort and "/processed/" in meta_h5ad:
+        cohort = meta_h5ad.split("/processed/")[1].split("/")[0]
+    if not cohort:
+        raise ValueError(
+            "Could not infer cohort; pass --cohort or use --meta_h5ad under data/processed/{cohort}/"
+        )
+
     ref_out = args.ref_out
     sr_out = args.sr_out
 
+    print("cohort: ", cohort)
     print("ref_out: ", ref_out)
     print("sr_out: ", sr_out)
 
@@ -266,13 +207,13 @@ def main() -> None:
     print("ref_file: ", ref_file)
     print("ref_tag: ", ref_tag)
 
-    ref_dir = f"../results_cell2location/ref_{ref_label}_{ref_tag}"
+    ref_dir = f"../results_cell2location/{cohort}/ref_{ref_label}_{ref_tag}"
     n_cells_suffix = c2l_n_cells_dir_suffix(n_cells_per_location)
     if args.spatial_dir:
         spatial_dir = args.spatial_dir
     else:
         spatial_dir = (
-            f"../results_cell2location/c2l_spatial_{label}_{ref_tag}{n_cells_suffix}"
+            f"../results_cell2location/{cohort}/c2l_spatial_{label}_{ref_tag}{n_cells_suffix}"
         )
 
     print("ref_dir: ", ref_dir)
@@ -307,14 +248,7 @@ def main() -> None:
 
     adata_ref = ensure_raw_counts(adata_ref, "reference")
     adata_ref = clean_labels(adata_ref, label_key, ref_batch_key)
-    selected = filter_genes(
-        adata_ref,
-        cell_count_cutoff=5,
-        cell_percentage_cutoff2=0.03,
-        nonz_mean_cutoff=1.12,
-    )
-
-    adata_ref = adata_ref[:, selected].copy()
+    adata_ref = filter_reference_genes(adata_ref)
 
     ref_h5ad = f"{ref_dir}/sc.h5ad"
     if os.path.exists(ref_h5ad):
@@ -394,6 +328,7 @@ def main() -> None:
     adata.obs["dominant_celltype"] = abund_df.idxmax(axis=1)
     adata.obs["dominant_abundance"] = abund_df.max(axis=1)
     adata.uns["cell2location_run"] = {
+        "cohort": cohort,
         "label": label,
         "ref_label": ref_label,
         "ref_tag": ref_tag,

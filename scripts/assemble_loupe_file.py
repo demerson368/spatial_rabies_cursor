@@ -1,5 +1,9 @@
 import argparse
+import json
 import os
+import time
+from pathlib import Path
+
 import scanpy as sc
 import squidpy as sq
 import pandas as pd
@@ -21,6 +25,129 @@ import cell2location
 from cell2location.utils.filtering import filter_genes
 from cell2location.models import RegressionModel
 from cell2location.models import Cell2location
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+FUSION_GENE_STEM = (
+    "93_core_gene_set_commonly_upregulated_in_human_and_mouse_"
+    "C11orf95_RELAFUS1_driven_ependymoma"
+)
+_DEBUG_LOG_PATH = REPO_ROOT / ".cursor" / "debug-89cdcb.log"
+
+
+def _agent_debug_log(
+    location: str,
+    message: str,
+    data: dict,
+    hypothesis_id: str,
+    run_id: str = "run1",
+) -> None:
+    """Append one NDJSON debug line for session 89cdcb (no-op if unwritable)."""
+    # #region agent log
+    payload = {
+        "sessionId": "89cdcb",
+        "timestamp": int(time.time() * 1000),
+        "location": location,
+        "message": message,
+        "data": data,
+        "hypothesisId": hypothesis_id,
+        "runId": run_id,
+    }
+    try:
+        _DEBUG_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with _DEBUG_LOG_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload) + "\n")
+    except OSError:
+        pass
+    # #endregion
+
+
+LOUPE_ANNOTATION_OBS_COLS = (
+    "cellestimate",
+    "predicted.id",
+    "cell2location",
+    "rctd",
+)
+
+
+def read_spot_annotation_tsv(path: str) -> pd.DataFrame:
+    """Read a Cellestimate or transfer TSV with spot barcodes in the first column.
+
+    Args:
+        path: Tab-separated file whose first column is spot barcodes.
+
+    Returns:
+        pd.DataFrame: Includes a ``Barcode`` column (string spot IDs).
+    """
+    df = pd.read_csv(path, sep="\t", engine="python", index_col=0)
+    df = df.rename_axis("Barcode").reset_index()
+    df["Barcode"] = df["Barcode"].astype(str)
+    return df
+
+
+def ensure_barcode_column(df: pd.DataFrame, *, label: str) -> pd.DataFrame:
+    """Ensure a ``Barcode`` column exists for TSV merges (Cellestimate / transfer).
+
+    Args:
+        df: Table read from a tab-separated annotation export.
+        label: Source label for error messages (e.g. ``cellestimate``).
+
+    Returns:
+        pd.DataFrame: Copy with ``Barcode`` as the spot ID column.
+
+    Raises:
+        ValueError: If no columns are present or ``Barcode`` cannot be inferred.
+    """
+    if "Barcode" in df.columns:
+        return df
+    if len(df.columns) == 0:
+        raise ValueError(f"{label}: empty table, cannot infer Barcode column")
+    first = df.columns[0]
+    if first in ("Unnamed: 0", ""):
+        return df.rename(columns={first: "Barcode"})
+    return df.rename(columns={first: "Barcode"})
+
+
+def load_fusion_reference_genes(repo_root: Path) -> list[str]:
+    """Load C11orf95-RELA fusion marker genes from ``reference/`` (xlsx or txt).
+
+    Args:
+        repo_root: Repository root containing ``reference/``.
+
+    Returns:
+        list[str]: Capitalized gene symbols for ``score_genes``.
+
+    Raises:
+        FileNotFoundError: If neither xlsx nor txt reference file exists.
+    """
+    ref_dir = repo_root / "reference"
+    xlsx_path = ref_dir / f"{FUSION_GENE_STEM}.xlsx"
+    txt_path = ref_dir / f"{FUSION_GENE_STEM}.txt"
+    # #region agent log
+    _agent_debug_log(
+        "assemble_loupe_file.py:load_fusion_reference_genes",
+        "fusion reference path probe",
+        {
+            "cwd": os.getcwd(),
+            "xlsx_exists": xlsx_path.is_file(),
+            "txt_exists": txt_path.is_file(),
+            "xlsx_path": str(xlsx_path),
+            "txt_path": str(txt_path),
+        },
+        "H1_missing_reference",
+    )
+    # #endregion
+    if xlsx_path.is_file():
+        instance = pd.read_excel(xlsx_path, sheet_name="Sheet1", header=None)
+        return instance[0].str.capitalize().tolist()
+    if txt_path.is_file():
+        raw = txt_path.read_text()
+        genes = [g.strip() for g in raw.replace(",", "\n").splitlines() if g.strip()]
+        return [g.capitalize() for g in genes]
+    raise FileNotFoundError(
+        "Fusion gene reference not found. Expected one of:\n"
+        f"  {xlsx_path}\n  {txt_path}"
+    )
+
 
 def IF_registrar_coord(adata,scale_factor = 0.5,select_channel = "red"):
     # Get the H&E reference image
@@ -420,6 +547,59 @@ def plot_celltype_overlay(adata, celltypes, img_key="hires",
     plt.tight_layout()
     return fig
 
+
+def assign_loupe_column_to_adata(
+    adata: sc.AnnData,
+    loupe_export: pd.DataFrame,
+    column: str,
+    *,
+    barcode_col: str = "Barcode",
+) -> None:
+    """Copy a Loupe export column onto ``adata.obs`` aligned by spot barcode.
+
+    ``loupe_export`` uses a default RangeIndex after ``reset_index()``; assigning
+    its columns directly to ``adata.obs`` mis-aligns against barcode ``obs_names``.
+
+    Args:
+        adata: Spatial AnnData whose ``obs_names`` are spot barcodes.
+        loupe_export: Table including ``barcode_col`` and ``column``.
+        column: Observation column to write in ``adata.obs``.
+        barcode_col: Column in ``loupe_export`` with barcodes matching ``obs_names``.
+
+    Returns:
+        None
+    """
+    loupe_unique = loupe_export.drop_duplicates(subset=barcode_col, keep="first")
+    n_dup = len(loupe_export) - len(loupe_unique)
+    by_barcode = loupe_unique.set_index(barcode_col)[column]
+    mapped = by_barcode.reindex(adata.obs_names.astype(str))
+    prior_dtype = str(adata.obs[column].dtype) if column in adata.obs.columns else None
+    if column in adata.obs.columns:
+        adata.obs.drop(columns=[column], inplace=True)
+    # #region agent log
+    _agent_debug_log(
+        "assemble_loupe_file.py:assign_loupe_column_to_adata",
+        "barcode map assignment",
+        {
+            "column": column,
+            "n_obs": int(len(adata.obs_names)),
+            "loupe_index_type": type(loupe_export.index).__name__,
+            "duplicate_barcodes_dropped": int(n_dup),
+            "mapped_non_na": int(mapped.notna().sum()),
+            "mapped_na": int(mapped.isna().sum()),
+            "mapped_nunique": int(mapped.nunique()),
+            "prior_obs_dtype": prior_dtype,
+        },
+        "H2_index_misalignment",
+    )
+    # #endregion
+    adata.obs[column] = pd.Series(
+        mapped.astype(object).to_numpy(),
+        index=adata.obs_names,
+        dtype=object,
+    )
+
+
 def main():
 
     """
@@ -447,6 +627,7 @@ def main():
     parser.add_argument('--h5ad_ext', type=str, default=None, help="extended h5ad output path")
     parser.add_argument('--loupe_out', type=str, default=None, help="Loupe CSV output path")
     parser.add_argument('--c2l_h5ad', type=str, default=None, help="cell2location sp.h5ad input path")
+    parser.add_argument('--rctd_h5ad', type=str, default=None, help="RCTD sp.h5ad input path")
     parser.add_argument('--transfer_txt', type=str, default=None, help="label transfer txt input path")
     parser.add_argument('--cellestimate_txt', type=str, default=None, help="cellestimate txt input path")
     parser.add_argument('--marker_excel', type=str, required=True, help="Allen/mouse brain marker Excel path")
@@ -454,6 +635,21 @@ def main():
     parser.add_argument('--marker_cluster_col', type=str, default="supertype.markers.combo", help="gene list column")
     parser.add_argument('--marker_class_col', type=str, default="class_label", help="cell class column")
     args = parser.parse_args()
+
+    # #region agent log
+    _agent_debug_log(
+        "assemble_loupe_file.py:main",
+        "assemble_loupe startup",
+        {
+            "script_file": str(Path(__file__).resolve()),
+            "repo_root": str(REPO_ROOT),
+            "cwd": os.getcwd(),
+            "label": args.label,
+        },
+        "H0_script_sync",
+        run_id="run1",
+    )
+    # #endregion
 
     adata = sc.read_h5ad(args.h5ad)
     label = args.label
@@ -465,6 +661,7 @@ def main():
         f"{processed_dir}/spatial_{label}{'' if ref_tag == 'v2' else f'_{ref_tag}'}_ext.h5ad"
     )
     c2l_h5ad = args.c2l_h5ad
+    rctd_h5ad = args.rctd_h5ad
 
     transfer_txt = args.transfer_txt or (
         f"{processed_dir}/spatial_{label}{'' if ref_tag == 'v2' else f'_{ref_tag}'}_predicted.id_transfer.txt"
@@ -495,8 +692,7 @@ def main():
 
     marker_allen['gfp_probe'] = ['Gfp', 'GFP', 'EGFP', 'eGFP', 'gfp', 'egfp','EGFP-L10a', 'Gfp-L10a', 'td-Tomato', 'mCherry']
     tumor = {}
-    instance = pd.read_excel("../reference/93_core_gene_set_commonly_upregulated_in_human_and_mouse_C11orf95_RELAFUS1_driven_ependymoma.xlsx",sheet_name="Sheet1",header=None)
-    tumor['C11orf95_relafus1'] = instance[0].str.capitalize().tolist()
+    tumor["C11orf95_relafus1"] = load_fusion_reference_genes(REPO_ROOT)
 
 
     for ct, genes in marker_allen.items():
@@ -637,12 +833,11 @@ def main():
     loupe_export.to_csv(loupe_out, index=False)
 
     # Add celltypes from spot identification from celltypeestimate
-    celltype_est = pd.read_csv(cellestimate_txt, sep="\t", engine="python")
-
-    celltype_est = celltype_est.rename(columns={
-        "Unnamed: 0": "Barcode",
-        "cell_type": "cellestimate"
-    })
+    celltype_est = read_spot_annotation_tsv(cellestimate_txt)
+    if "cell_type" in celltype_est.columns:
+        celltype_est = celltype_est.rename(columns={"cell_type": "cellestimate"})
+    elif "cellestimate" not in celltype_est.columns and len(celltype_est.columns) == 2:
+        celltype_est = celltype_est.rename(columns={celltype_est.columns[1]: "cellestimate"})
 
     loupe_export = loupe_export.merge(
         celltype_est,
@@ -653,12 +848,11 @@ def main():
 
     ## test adding labels from label transfer from ref (merged_dJ33_J51_D87_J58_J59_J61_D85_J52_J53)
 
-    predicted_id_df = pd.read_csv(transfer_txt, sep="\t", engine="python")
-
-    predicted_id_df = predicted_id_df.rename(columns={
-        "Unnamed: 0": "Barcode",
-        "predicted.id": "predicted.id"
-    })
+    predicted_id_df = read_spot_annotation_tsv(transfer_txt)
+    if "predicted.id" not in predicted_id_df.columns and len(predicted_id_df.columns) == 2:
+        predicted_id_df = predicted_id_df.rename(
+            columns={predicted_id_df.columns[1]: "predicted.id"}
+        )
 
     loupe_export = loupe_export.merge(
         predicted_id_df,
@@ -667,32 +861,94 @@ def main():
         suffixes=("", "_right")
     )
 
+    for annot_col in ("cellestimate", "predicted.id"):
+        if annot_col in loupe_export.columns:
+            n_match = loupe_export[annot_col].notna().sum()
+            print(
+                f"{annot_col} merge: {n_match}/{len(loupe_export)} spots "
+                f"({100.0 * n_match / len(loupe_export):.1f}%)"
+            )
 
     ## Add cell2location
     if c2l_h5ad and os.path.isfile(c2l_h5ad):
         adata_cell_2_location = sc.read_h5ad(c2l_h5ad)
         cell2loc_series = adata_cell_2_location.obs["dominant_celltype"].rename("cell2location")
         loupe_export["cell2location"] = loupe_export["Barcode"].map(cell2loc_series)
-        adata.obs["cell2location"] = loupe_export["cell2location"]
+        assign_loupe_column_to_adata(adata, loupe_export, "cell2location")
     else:
         print(f"Skipping cell2location (no file: {c2l_h5ad!r})")
         loupe_export["cell2location"] = "Unknown"
         adata.obs["cell2location"] = "Unknown"
 
+    ## Add RCTD
+    if rctd_h5ad and os.path.isfile(rctd_h5ad):
+        adata_rctd = sc.read_h5ad(rctd_h5ad)
+        rctd_series = adata_rctd.obs["dominant_celltype"].rename("rctd")
+        loupe_export["rctd"] = loupe_export["Barcode"].map(rctd_series)
+        assign_loupe_column_to_adata(adata, loupe_export, "rctd")
+    else:
+        print(f"Skipping RCTD (no file: {rctd_h5ad!r})")
+        loupe_export["rctd"] = "Unknown"
+        adata.obs["rctd"] = "Unknown"
 
-    adata.obs["predicted.id"] = loupe_export["predicted.id"].astype(str)
-    adata.obs["predicted.id"] = adata.obs["predicted.id"].fillna("Unknown").astype(str)
-    adata.obs["cellestimate"] = loupe_export["cellestimate"]
+    # #region agent log
+    if "cellestimate" in loupe_export.columns:
+        _agent_debug_log(
+            "assemble_loupe_file.py:main",
+            "loupe_export cellestimate before adata assign",
+            {
+                "loupe_nunique": int(loupe_export["cellestimate"].nunique()),
+                "loupe_unknown": int(
+                    (loupe_export["cellestimate"].astype(str) == "Unknown").sum()
+                ),
+                "h5ad_ext": str(h5ad_ext),
+            },
+            "H4_stale_or_wrong_h5ad",
+        )
+    # #endregion
 
+    loupe_export["Barcode"] = loupe_export["Barcode"].astype(str)
+    assign_loupe_column_to_adata(adata, loupe_export, "predicted.id")
+    assign_loupe_column_to_adata(adata, loupe_export, "cellestimate")
 
-    # Fix all object dtype columns before writing
+    # #region agent log
+    if "cellestimate" in adata.obs.columns:
+        ce = adata.obs["cellestimate"]
+        _agent_debug_log(
+            "assemble_loupe_file.py:main",
+            "cellestimate before object fillna",
+            {
+                "na_count": int(ce.isna().sum()),
+                "unknown_literal_count": int((ce.astype(str) == "Unknown").sum()),
+                "value_nunique": int(ce.nunique()),
+                "obs_dtype": str(ce.dtype),
+            },
+            "H3_fillna_unknown",
+        )
+    # #endregion
+
+    for col in LOUPE_ANNOTATION_OBS_COLS:
+        if col not in adata.obs.columns:
+            continue
+        adata.obs[col] = (
+            adata.obs[col]
+            .astype(object)
+            .where(adata.obs[col].notna(), "Unknown")
+            .astype(str)
+        )
+
+    # Fix remaining object dtype columns before writing
     for col in adata.obs.columns:
+        if col in LOUPE_ANNOTATION_OBS_COLS:
+            continue
         if adata.obs[col].dtype == object:
             adata.obs[col] = adata.obs[col].fillna("Unknown").astype(str)
 
     # Also fix categorical columns with mixed types
     for col in adata.obs.columns:
-        if hasattr(adata.obs[col], 'cat'):
+        if col in LOUPE_ANNOTATION_OBS_COLS:
+            continue
+        if hasattr(adata.obs[col], "cat"):
             adata.obs[col] = adata.obs[col].astype(str)
 
 
@@ -706,6 +962,21 @@ def main():
     #tlcelltype_assigned
 
     adata.write(h5ad_ext)
+
+    # #region agent log
+    if "cellestimate" in adata.obs.columns:
+        ce_final = adata.obs["cellestimate"].astype(str)
+        _agent_debug_log(
+            "assemble_loupe_file.py:main",
+            "cellestimate after write prep",
+            {
+                "unknown_count": int((ce_final == "Unknown").sum()),
+                "h5ad_ext": str(h5ad_ext),
+            },
+            "H3_fillna_unknown",
+            run_id="post-write-prep",
+        )
+    # #endregion
 
     loupe_export.to_csv(loupe_out, index=False, na_rep="Unknown")
 

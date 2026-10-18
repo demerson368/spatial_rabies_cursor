@@ -35,7 +35,7 @@ DEFAULT_IF_DIR = (
     "/research/groups/plummgrp/projects/Visium_855118_Steve_Mack_Siri_09232025/"
     "common/Tuyu_Apr2026/IF_images"
 )
-MIN_GENES = 3
+MIN_GENES = 2 #3 
 
 SIGNATURE_SETS: dict[str, tuple[str, str]] = {
     "gaba_glut_intersection": (
@@ -366,7 +366,8 @@ def resolve_h5ad_path(args: argparse.Namespace) -> Path:
             f"Multiple ref-tagged extended h5ad files match label {args.label!r}: "
             f"{', '.join(p.name for p in matches)}. Pass --h5ad explicitly."
         )
-
+    
+    print(f"spatial_{args.label}_*_ext.h5ad")
     raise FileNotFoundError(
         f"No extended h5ad found for label {args.label!r} under {processed_dir}"
     )

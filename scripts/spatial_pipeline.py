@@ -13,17 +13,17 @@ import matplotlib.pyplot as plt
 def main():
 
     output_dir = '../data/processed/'
-    output_subdir = 'Tuyu_Apr2026/' #'Tuyu_Apr2026_test/'
-    full_output   = os.path.join(output_dir, output_subdir)
-    os.makedirs(full_output, exist_ok=True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str, help="folder to space ranger output")
-    parser.add_argument('label',type=str,help="name of spatial output")
+    parser.add_argument('label', type=str, help="name of spatial output")
+    parser.add_argument('--cohort', type=str, required=True, help="cohort subdir under data/processed/")
     args = parser.parse_args()
 
     path = args.path
     label = args.label
+    full_output = os.path.join(output_dir, args.cohort)
+    os.makedirs(full_output, exist_ok=True)
 
     adata_st = sc.read_visium(
         path=path,          # folder containing spatial/ and matrix/

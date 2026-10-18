@@ -32,6 +32,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--label", type=str, required=True, help="Sample label stem")
     parser.add_argument(
+        "--cohort",
+        type=str,
+        default=COHORT,
+        help="Cohort subdirectory under results_cell2location/",
+    )
+    parser.add_argument(
         "--ref_tag",
         type=str,
         default="merged_nontumor_v1_broad",
@@ -41,13 +47,13 @@ def parse_args() -> argparse.Namespace:
         "--n2_h5ad",
         type=Path,
         default=None,
-        help="N=2 sp.h5ad path (default: results_cell2location/c2l_spatial_{label}_{ref_tag}/sp.h5ad)",
+        help="N=2 sp.h5ad path (default: results_cell2location/{cohort}/c2l_spatial_{label}_{ref_tag}/sp.h5ad)",
     )
     parser.add_argument(
         "--n1_h5ad",
         type=Path,
         default=None,
-        help="N=1 sp.h5ad path (default: .../c2l_spatial_{label}_{ref_tag}_n1/sp.h5ad)",
+        help="N=1 sp.h5ad path (default: .../{cohort}/c2l_spatial_{label}_{ref_tag}_n1/sp.h5ad)",
     )
     parser.add_argument(
         "--loupe_csv",
@@ -141,11 +147,11 @@ def main() -> None:
 
     n2_path = args.n2_h5ad or (
         repo_root
-        / f"results_cell2location/c2l_spatial_{args.label}_{args.ref_tag}/sp.h5ad"
+        / f"results_cell2location/{args.cohort}/c2l_spatial_{args.label}_{args.ref_tag}/sp.h5ad"
     )
     n1_path = args.n1_h5ad or (
         repo_root
-        / f"results_cell2location/c2l_spatial_{args.label}_{args.ref_tag}_n1/sp.h5ad"
+        / f"results_cell2location/{args.cohort}/c2l_spatial_{args.label}_{args.ref_tag}_n1/sp.h5ad"
     )
 
     adata_n2 = sc.read_h5ad(n2_path)
