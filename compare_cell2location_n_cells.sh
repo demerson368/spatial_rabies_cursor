@@ -1,0 +1,7 @@
+
+python scripts/compare_cell2location_n_cells.py \
+  --label Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um \
+  --ref_tag merged_nontumor_v1_broad \
+  --n2_h5ad results_cell2location/c2l_spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_merged_nontumor_v1_broad_nontumor/sp.h5ad \
+  --n1_h5ad results_cell2location/c2l_spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_merged_nontumor_v1_broad_nontumor_n1/sp.h5ad \
+  --loupe_csv for_loupe/spatial_Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_merged_nontumor_v1_broad_nontumor_for_loupe.csv

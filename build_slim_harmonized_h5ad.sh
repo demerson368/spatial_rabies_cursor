@@ -1,1 +1,14 @@
-bsub -o build_slim_harmonized_h5ad.o -e build_slim_harmonized_h5ad.e -R "rusage[mem=150000]" python scripts/build_slim_harmonized_h5ad.py 
+#bsub -o build_slim_harmonized_h5ad.o -e build_slim_harmonized_h5ad.e -R "rusage[mem=150000]" python scripts/build_slim_harmonized_h5ad.py 
+
+#bsub -o build_slim_harmonized_h5ad.o -e build_slim_harmonized_h5ad.e -R "rusage[mem=150000]" python scripts/build_slim_harmonized_h5ad.py --labels Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um  Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J75_3_D1_GFP_R1_008um
+
+#testing h5ad with broad annotations using cell2location from nontumor broad - alot of duplication with broad.  Only interested in the umap...
+#bsub -o build_slim_harmonized_h5ad.o -e build_slim_harmonized_h5ad.e -R "rusage[mem=150000]" python scripts/build_slim_harmonized_h5ad.py --labels Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_merged_nontumor_v1_broad  Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_merged_nontumor_v1_broad Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um_merged_nontumor_v1_broad Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J75_3_D1_GFP_R1_008um_merged_nontumor_v1_broad --output-h5ad spatial_combined_slim_harmony_annotated_D90_7_D1_D90_5_A1_J74_3_A1_J75_3_D1_broad.h5ad --output_label combined_slim_harmony_annotated_D90_7_D1_D90_5_A1_J74_3_A1_J75_3_D1_broad
+
+
+#testing h5ad with subclass annotations using cell2location from nontumor sublcass - alot of duplication with broad.  Only interested in the umap...
+bsub -o build_slim_harmonized_h5ad.o -e build_slim_harmonized_h5ad.e -R "rusage[mem=150000]" python scripts/build_slim_harmonized_h5ad.py --labels Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um_merged_nontumor_v1_subclass  Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um_merged_nontumor_v1_subclass Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um_merged_nontumor_v1_subclass Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J75_3_D1_GFP_R1_008um_merged_nontumor_v1_subclass --output-h5ad spatial_combined_slim_harmony_annotated_D90_7_D1_D90_5_A1_J74_3_A1_J75_3_D1_subclass.h5ad --output_label combined_slim_harmony_annotated_D90_7_D1_D90_5_A1_J74_3_A1_J75_3_D1_subclass
+
+
+
+

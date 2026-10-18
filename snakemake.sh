@@ -24,9 +24,15 @@ CONFIG="${ROOT}/config/config.yaml"
 SAMPLES_TSV="${ROOT}/config/samples.tsv"
 #SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um}"
 #SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J75_3_D1_GFP_R1_008um}"
-#SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um}"
+#SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_J75_3_D1_GFP_R1_016um}"
+SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um}"
+#SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_016um}"
 #SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um}"
-SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_016um}"
+#SAMPLE="${SAMPLE:-Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_016um}"
+#SAMPLE="${SAMPLE:-Tuyu_Feb2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um}"
+#SAMPLE="${SAMPLE:-Tuyu_Feb2026_846531_HD_BA_WM_C_DNB_SM_D90_7_D1_GFP_R1_008um}"
+#SAMPLE="${SAMPLE:-Tuyu_Feb2026_846531_HD_BA_WM_C_DNB_SM_J75_3_D1_GFP_R1_008um}"
+#SAMPLE="${SAMPLE:-Tuyu_Feb2026_846531_HD_BA_WM_C_DNB_SM_J74_3_A1_GFP_R1_008um}"
 
 read -r REF_TAG DEFAULT_TARGET <<< "$(
   python3 - "${CONFIG}" "${SAMPLES_TSV}" "${SAMPLE}" <<'PY'
@@ -50,12 +56,13 @@ suffix = "" if ref_tag == "v2" else f"_{ref_tag}"
 df = pd.read_csv(samples_path, sep="\t", comment="#")
 df.columns = df.columns.str.strip()
 matches = df.loc[df["label"].astype(str) == label]
+cohort = matches["cohort"].iloc[0] if len(matches) == 1 else "Tuyu_Apr2026"
 if len(matches) == 1 and "run_nontumor_filter" in df.columns:
     flag = str(matches["run_nontumor_filter"].iloc[0]).lower()
     if flag in {"1", "true", "yes", "y"}:
         suffix = f"{suffix}_nontumor"
 
-target = f"for_loupe/spatial_{label}{suffix}_for_loupe.csv"
+target = f"for_loupe/{cohort}/spatial_{label}{suffix}_for_loupe.csv"
 print(ref_tag, target)
 PY
 )"

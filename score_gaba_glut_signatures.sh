@@ -1,0 +1,4 @@
+#bsub -o score_gaba_glut_signatures.o -e score_gaba_glut_signatures.e -R "rusage[mem=40000]" python scripts/score_gaba_glut_signatures.py --label Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um --if_dir /research/groups/plummgrp/projects/Visium_855118_Steve_Mack_Siri_09232025/common/Tuyu_Apr2026/IF_images/  --if_image 846531_HD_BA_WM_C_DNB_SM_D90-5-A1-GFP_R1_IF_transform_reoriented.tif  --score_vmin 0 --score_vmax 0.15
+
+
+bsub -o score_gaba_glut_signatures.o -e score_gaba_glut_signatures.e -R "rusage[mem=40000]" python scripts/score_gaba_glut_signatures.py --label Tuyu_Apr2026_846531_HD_BA_WM_C_DNB_SM_D90_5_A1_GFP_R1_008um --if_dir /research/groups/plummgrp/projects/Visium_855118_Steve_Mack_Siri_09232025/common/Tuyu_Apr2026/IF_images/  --if_image 846531_HD_BA_WM_C_DNB_SM_D90-5-A1-GFP_R1_IF_transform_reoriented.tif  --gene Ptprc
